@@ -1,123 +1,171 @@
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            width: 100%; height: 100%;
-            overflow: hidden;
-            background: #0a0a0a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Arial', sans-serif;
-        }
-        #gameContainer {
-            width: 100vw; height: 100vh;
-            background: #1a1a2e;
-            position: relative;
-            overflow: hidden;
-        }
-        canvas {
-            display: block;
-            width: 100%; height: 100%;
-            background: #4fc3f7;
-            cursor: none;
-        }
+/* ===== ESTILOS BASE ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #0a0a0a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Arial', sans-serif;
+}
+#gameContainer {
+    width: 100vw; height: 100vh;
+    background: #1a1a2e;
+    position: relative;
+    overflow: hidden;
+}
+canvas {
+    display: block;
+    width: 100%; height: 100%;
+    background: #4fc3f7;
+    cursor: none;
+}
 
-        .menu-overlay {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.75);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            z-index: 10;
-            padding: 20px;
-            text-align: center;
-        }
-        .menu-overlay h1 { font-size: clamp(2em, 8vw, 4.5em); margin-bottom: 10px; text-shadow: 3px 3px 0 #000; letter-spacing: 2px; }
-        .menu-overlay h2 { font-size: clamp(1.5em, 5vw, 2.5em); margin-bottom: 15px; text-shadow: 2px 2px 0 #000; }
-        .menu-overlay p { font-size: clamp(0.8em, 2vw, 1.2em); max-width: 600px; margin: 8px 0; line-height: 1.5; }
-        .menu-overlay button {
-            background: #f1c40f;
-            border: none;
-            color: #000;
-            font-size: clamp(1.2em, 3vw, 1.8em);
-            padding: 12px 40px;
-            margin: 10px;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: transform 0.15s, background 0.15s;
-            box-shadow: 0 4px 0 #b38f0c;
-        }
-        .menu-overlay button:hover { transform: scale(1.05); background: #f39c12; }
-        .menu-overlay button:active { transform: scale(0.95); }
-        .menu-overlay .small-btn { font-size: clamp(0.8em, 2vw, 1.2em); padding: 8px 25px; }
-        .menu-overlay .score-list {
-            text-align: left;
-            max-height: 40vh;
-            overflow-y: auto;
-            width: 80%;
-            max-width: 500px;
-            background: rgba(0,0,0,0.5);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 10px 0;
-        }
-        .menu-overlay .score-list li { list-style: none; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.2); font-size: clamp(0.9em, 1.5vw, 1.1em); }
-        .hidden { display: none !important; }
+/* ===== MENÚS ===== */
+.menu-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    z-index: 10;
+    padding: 20px;
+    text-align: center;
+}
+.menu-overlay h1 { font-size: clamp(2em, 8vw, 4.5em); margin-bottom: 10px; text-shadow: 3px 3px 0 #000; letter-spacing: 2px; }
+.menu-overlay h2 { font-size: clamp(1.5em, 5vw, 2.5em); margin-bottom: 15px; text-shadow: 2px 2px 0 #000; }
+.menu-overlay p { font-size: clamp(0.8em, 2vw, 1.2em); max-width: 600px; margin: 8px 0; line-height: 1.5; }
+.menu-overlay button {
+    background: #f1c40f;
+    border: none;
+    color: #000;
+    font-size: clamp(1.2em, 3vw, 1.8em);
+    padding: 12px 40px;
+    margin: 10px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.15s, background 0.15s;
+    box-shadow: 0 4px 0 #b38f0c;
+}
+.menu-overlay button:hover { transform: scale(1.05); background: #f39c12; }
+.menu-overlay button:active { transform: scale(0.95); }
+.menu-overlay .small-btn { font-size: clamp(0.8em, 2vw, 1.2em); padding: 8px 25px; }
+.menu-overlay .score-list {
+    text-align: left;
+    max-height: 40vh;
+    overflow-y: auto;
+    width: 80%;
+    max-width: 500px;
+    background: rgba(0,0,0,0.5);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+.menu-overlay .score-list li { list-style: none; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.2); font-size: clamp(0.9em, 1.5vw, 1.1em); }
+.hidden { display: none !important; }
 
-        #ui {
-            position: absolute;
-            top: 10px; left: 10px;
-            color: white;
-            font-size: clamp(0.8em, 1.5vw, 1.2em);
-            background: rgba(0,0,0,0.5);
-            padding: 10px 15px;
-            border-radius: 10px;
-            z-index: 5;
-            pointer-events: none;
-            backdrop-filter: blur(4px);
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px 20px;
-            max-width: 80%;
-        }
-        #ui span { margin-right: 5px; }
-        #ui .badge { background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 12px; }
-        #pauseMsg {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: clamp(2em, 5vw, 4em);
-            background: rgba(0,0,0,0.6);
-            padding: 20px 40px;
-            border-radius: 20px;
-            z-index: 6;
-            display: none;
-            pointer-events: none;
-        }
-        #levelIntro {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: clamp(2.5em, 6vw, 5em);
-            font-weight: bold;
-            text-shadow: 0 0 30px rgba(0,0,0,0.8);
-            background: rgba(0,0,0,0.5);
-            padding: 20px 50px;
-            border-radius: 20px;
-            z-index: 7;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-            text-align: center;
-        }
-        #levelIntro.show { opacity: 1; }
-        @media (max-width: 768px) {
-            #ui { font-size: 0.7em; padding: 5px 10px; gap: 5px 10px; max-width: 90%; }
-            #levelIntro { font-size: 2em; padding: 15px 30px; }
-        }
+/* ===== UI DEL JUEGO ===== */
+#ui {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px 20px;
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: clamp(0.8em, 1.5vw, 1.2em);
+    background: rgba(0,0,0,0.5);
+    padding: 10px 20px;
+    border-radius: 10px;
+    z-index: 5;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    max-width: 90%;
+}
+#ui > div {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+#casualtiesContainer {
+    font-weight: bold;
+    background: rgba(255,255,255,0.1);
+    padding: 2px 12px;
+    border-radius: 20px;
+}
+#timerContainer {
+    font-weight: bold;
+    background: rgba(255,255,255,0.1);
+    padding: 2px 12px;
+    border-radius: 20px;
+}
+#pauseMsg {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: clamp(2em, 5vw, 4em);
+    background: rgba(0,0,0,0.6);
+    padding: 20px 40px;
+    border-radius: 20px;
+    z-index: 6;
+    display: none;
+    pointer-events: none;
+}
+#levelIntro {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: clamp(2.5em, 6vw, 5em);
+    font-weight: bold;
+    text-shadow: 0 0 30px rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.5);
+    padding: 20px 50px;
+    border-radius: 20px;
+    z-index: 7;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    text-align: center;
+}
+#levelIntro.show { opacity: 1; }
+
+/* ===== INTERRUPTOR DE IDIOMA ===== */
+#languageToggle {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    justify-content: center;
+    align-items: center;
+}
+.lang-flag {
+    width: 40px;
+    height: 30px;
+    cursor: pointer;
+    opacity: 0.5;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    transition: opacity 0.3s, border 0.3s;
+}
+.lang-flag.active {
+    opacity: 1;
+    border-color: #f1c40f;
+}
+.lang-flag:hover {
+    opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    #ui { font-size: 0.7em; padding: 5px 10px; gap: 5px 10px; max-width: 90%; }
+    #levelIntro { font-size: 2em; padding: 15px 30px; }
+}

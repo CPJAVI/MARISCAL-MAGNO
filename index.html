@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>🔱 MARISCAL MAGNO 🔱</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-    </style>
 </head>
 <body>
 <div id="gameContainer">
@@ -14,9 +12,12 @@
 
     <!-- UI del juego -->
     <div id="ui">
-        <div><span>❤️</span> <span id="marshalHP">2000</span></div>
-        <div><span id="killLabel">⚔️</span> <span id="enemyKills">0</span> / <span id="allyKills">0</span></div>
-        <div><span>⏱️</span> <span id="timerDisplay">0:00</span></div>
+        <div id="casualtiesContainer">
+            <span>⚔️</span> <span id="enemyKills">0</span> <span style="color:#aaa;">-</span> <span id="allyKills">0</span>
+        </div>
+        <div id="timerContainer" style="display:none;">
+            <span>⏱️</span> <span id="timerDisplay">0:00</span>
+        </div>
         <div><span>🏹</span> <span id="unitsDisplay">G:0 A:0 M:0 J:0</span></div>
         <div><span>📊</span> <span id="fieldUnits">0/200</span></div>
     </div>
@@ -25,53 +26,60 @@
 
     <!-- Menús -->
     <div id="mainMenu" class="menu-overlay">
-        <h1>🔱 MARISCAL MAGNO 🔱</h1>
-        <p>¡5 niveles de acción!</p>
-        <button id="playBtn">▶ JUGAR</button>
-        <button id="instructionsBtn" class="small-btn">📖 INSTRUCCIONES</button>
-        <button id="scoresBtn" class="small-btn">🏆 HISTORIAL</button>
-        <p style="font-size:0.8em; margin-top:20px; opacity:0.8;">Flechas mover | J ataque | K escudo | L disparo | 1-4 unidades (grupos) | 5 rendirse | P pausa</p>
+        <h1 data-i18n="title">🔱 MARISCAL MAGNO 🔱</h1>
+        <p data-i18n="subtitle">¡5 niveles de acción!</p>
+        <button id="playBtn" class="small-btn" data-i18n="playBtn">▶ JUGAR</button>
+        <button id="instructionsBtn" class="small-btn" data-i18n="instructionsBtn">📖 INSTRUCCIONES</button>
+        <button id="scoresBtn" class="small-btn" data-i18n="scoresBtn">🏆 HISTORIAL</button>
+
+        <div id="languageToggle">
+            <img src="images/spain.png" alt="Español" id="langEs" class="lang-flag active" data-lang="es">
+            <img src="images/uk.png" alt="English" id="langEn" class="lang-flag" data-lang="en">
+        </div>
+
+        <p style="font-size:0.8em; margin-top:20px; opacity:0.8;" data-i18n="controls">Flechas mover | J ataque | K escudo | L disparo | 1-4 unidades (grupos) | 5 rendirse | P pausa</p>
     </div>
 
     <div id="instructionsScreen" class="menu-overlay hidden">
-        <h2>📖 INSTRUCCIONES</h2>
-        <p><strong>Mariscal:</strong> Flechas mover, J ataque (espada), K escudo, L disparo (proyectil).</p>
-        <p><strong>Reclutar grupos:</strong> 1 → 10 Guerreros, 2 → 5 Arqueros, 3 → 5 Magas, 4 → 5 Jinetes.</p>
-        <p><strong>Niveles:</strong> N1: Aniquilar enemigos. N2: Más bajas en 2 min (oleadas rápidas). N3: Defender base 2 min (máx 40 aliados, 80 enemigos). N4: Infiltrar soldado en base enemiga (máx 80 aliados, 40 enemigos, oleadas rápidas, muro infranqueable, defensores no pasan de la mitad). N5: Derrotar al JEFE (100.000 PS, dispara bolas de fuego, máx 20 aliados).</p>
-        <p><strong>Puntuación:</strong> bajas_enemigas - bajas_propias. ¡Historial guardado!</p>
-        <p><strong>Teclas:</strong> 5 rendirse (confirmar), P pausar.</p>
-        <button id="backFromInstructions" class="small-btn">⬅ VOLVER</button>
+        <h2 data-i18n="instructionsTitle">📖 INSTRUCCIONES</h2>
+        <div data-i18n="instructionsText" style="max-width:600px; text-align:left; margin:10px auto;">
+            <p><strong>Mariscal:</strong> Flechas mover, J ataque (espada), K escudo, L disparo (proyectil).</p>
+            <p><strong>Reclutar grupos:</strong> 1 → 10 Guerreros, 2 → 5 Arqueros, 3 → 5 Magas, 4 → 5 Jinetes.</p>
+            <p><strong>Niveles:</strong> N1: Aniquilar enemigos. N2: Más bajas en 2 min (oleadas rápidas). N3: Defender base 2 min (máx 40 aliados, 80 enemigos). N4: Infiltrar soldado en base enemiga (máx 80 aliados, 40 enemigos, oleadas rápidas, muro infranqueable, defensores no pasan de la mitad). N5: Derrotar al JEFE (100.000 PS, dispara bolas de fuego, máx 20 aliados).</p>
+            <p><strong>Puntuación:</strong> bajas_enemigas - bajas_propias. ¡Historial guardado!</p>
+            <p><strong>Teclas:</strong> 5 rendirse (confirmar), P pausar.</p>
+        </div>
+        <button id="backFromInstructions" class="small-btn" data-i18n="backFromInstructions">⬅ VOLVER</button>
     </div>
 
     <div id="scoresScreen" class="menu-overlay hidden">
-        <h2>🏆 HISTORIAL</h2>
+        <h2 data-i18n="scoresTitle">🏆 HISTORIAL</h2>
         <ul id="scoreList" class="score-list"></ul>
-        <button id="clearScoresBtn" class="small-btn">🗑️ BORRAR HISTORIAL</button>
-        <button id="backFromScores" class="small-btn">⬅ VOLVER</button>
+        <button id="clearScoresBtn" class="small-btn" data-i18n="clearScoresBtn">🗑️ BORRAR HISTORIAL</button>
+        <button id="backFromScores" class="small-btn" data-i18n="backFromScoresBtn">⬅ VOLVER</button>
     </div>
 
     <div id="gameOverScreen" class="menu-overlay hidden">
-        <h1>💀 DERROTA</h1>
-        <p>Puntuación final: <span id="finalScore">0</span></p>
-        <button id="restartBtn" class="small-btn">🔄 REINICIAR</button>
-        <button id="menuBtn" class="small-btn">🏠 MENÚ</button>
+        <h1 data-i18n="gameOverTitle">💀 DERROTA</h1>
+        <p><span data-i18n="finalScoreLabel">Puntuación final:</span> <span id="finalScore">0</span></p>
+        <button id="restartBtn" class="small-btn" data-i18n="restartBtn">🔄 REINICIAR</button>
+        <button id="menuBtn" class="small-btn" data-i18n="menuBtn">🏠 MENÚ</button>
     </div>
 
     <div id="victoryScreen" class="menu-overlay hidden">
-        <h1>🏆 ¡VICTORIA!</h1>
-        <p>Puntuación final: <span id="victoryScore">0</span></p>
-        <button id="winRestartBtn" class="small-btn">🔄 JUGAR DE NUEVO</button>
-        <button id="winMenuBtn" class="small-btn">🏠 MENÚ</button>
+        <h1 data-i18n="victoryTitle">🏆 ¡VICTORIA!</h1>
+        <p><span data-i18n="victoryScoreLabel">Puntuación final:</span> <span id="victoryScore">0</span></p>
+        <button id="winRestartBtn" class="small-btn" data-i18n="winRestartBtn">🔄 JUGAR DE NUEVO</button>
+        <button id="winMenuBtn" class="small-btn" data-i18n="winMenuBtn">🏠 MENÚ</button>
     </div>
 
     <div id="surrenderConfirm" class="menu-overlay hidden">
-        <h2>⚠️ ¿RENDIRSE?</h2>
-        <p>Perderás la partida actual. ¿Estás seguro?</p>
-        <button id="surrenderYes" class="small-btn">✅ SÍ</button>
-        <button id="surrenderNo" class="small-btn">❌ NO</button>
+        <h2 data-i18n="surrenderTitle">⚠️ ¿RENDIRSE?</h2>
+        <p data-i18n="surrenderText">Perderás la partida actual. ¿Estás seguro?</p>
+        <button id="surrenderYes" class="small-btn" data-i18n="surrenderYes">✅ SÍ</button>
+        <button id="surrenderNo" class="small-btn" data-i18n="surrenderNo">❌ NO</button>
     </div>
 </div>
 <script src="script.js"></script>
-
 </body>
 </html>

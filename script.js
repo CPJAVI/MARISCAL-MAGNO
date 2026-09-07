@@ -17,13 +17,12 @@ const H = () => canvas.height;
 
 // Elementos UI
 const ui = document.getElementById('ui');
-const marshalHPSpan = document.getElementById('marshalHP');
 const enemyKillsSpan = document.getElementById('enemyKills');
 const allyKillsSpan = document.getElementById('allyKills');
 const timerSpan = document.getElementById('timerDisplay');
+const timerContainer = document.getElementById('timerContainer');
 const unitsSpan = document.getElementById('unitsDisplay');
 const fieldUnitsSpan = document.getElementById('fieldUnits');
-const killLabel = document.getElementById('killLabel');
 const levelIntro = document.getElementById('levelIntro');
 
 // Menús
@@ -38,7 +37,62 @@ const finalScoreSpan = document.getElementById('finalScore');
 const victoryScoreSpan = document.getElementById('victoryScore');
 
 // ============================================================
-//  SISTEMA DE SONIDOS (con control de sonidos activos)
+//  SISTEMA DE TRADUCCIONES
+// ============================================================
+const translations = {
+    title: { es: '🔱 MARISCAL MAGNO 🔱', en: '🔱 GREAT MARSHAL 🔱' },
+    subtitle: { es: '¡5 niveles de acción!', en: '5 action levels!' },
+    playBtn: { es: '▶ JUGAR', en: '▶ PLAY' },
+    instructionsBtn: { es: '📖 INSTRUCCIONES', en: '📖 INSTRUCTIONS' },
+    scoresBtn: { es: '🏆 HISTORIAL', en: '🏆 SCORES' },
+    controls: {
+        es: 'Flechas mover | J ataque | K escudo | L disparo | 1-4 unidades (grupos) | 5 rendirse | P pausa',
+        en: 'Arrows move | J attack | K shield | L shoot | 1-4 units (groups) | 5 surrender | P pause'
+    },
+    instructionsTitle: { es: '📖 INSTRUCCIONES', en: '📖 INSTRUCTIONS' },
+    instructionsText: {
+        es: `<p><strong>Mariscal:</strong> Flechas mover, J ataque (espada), K escudo, L disparo (proyectil).</p>
+             <p><strong>Reclutar grupos:</strong> 1 → 10 Guerreros, 2 → 5 Arqueros, 3 → 5 Magas, 4 → 5 Jinetes.</p>
+             <p><strong>Niveles:</strong> N1: Aniquilar enemigos. N2: Más bajas en 2 min (oleadas rápidas). N3: Defender base 2 min (máx 40 aliados, 80 enemigos). N4: Infiltrar soldado en base enemiga (máx 80 aliados, 40 enemigos, oleadas rápidas, muro infranqueable, defensores no pasan de la mitad). N5: Derrotar al JEFE (100.000 PS, dispara bolas de fuego, máx 20 aliados).</p>
+             <p><strong>Puntuación:</strong> bajas_enemigas - bajas_propias. ¡Historial guardado!</p>
+             <p><strong>Teclas:</strong> 5 rendirse (confirmar), P pausar.</p>`,
+        en: `<p><strong>Marshal:</strong> Arrows move, J attack (sword), K shield, L shoot (projectile).</p>
+             <p><strong>Recruit groups:</strong> 1 → 10 Warriors, 2 → 5 Archers, 3 → 5 Mages, 4 → 5 Riders.</p>
+             <p><strong>Levels:</strong> L1: Annihilate enemies. L2: More kills in 2 min (fast waves). L3: Defend base 2 min (max 40 allies, 80 enemies). L4: Infiltrate soldier into enemy base (max 80 allies, 40 enemies, fast waves, impassable wall, defenders stay on their half). L5: Defeat the BOSS (100,000 HP, fires fireballs, max 20 allies).</p>
+             <p><strong>Score:</strong> enemy_kills - ally_kills. History saved!</p>
+             <p><strong>Keys:</strong> 5 surrender (confirm), P pause.</p>`
+    },
+    backFromInstructions: { es: '⬅ VOLVER', en: '⬅ BACK' },
+    scoresTitle: { es: '🏆 HISTORIAL', en: '🏆 SCORES' },
+    noScores: { es: 'No hay puntuaciones', en: 'No scores' },
+    clearScoresBtn: { es: '🗑️ BORRAR HISTORIAL', en: '🗑️ CLEAR SCORES' },
+    backFromScoresBtn: { es: '⬅ VOLVER', en: '⬅ BACK' },
+    gameOverTitle: { es: '💀 DERROTA', en: '💀 DEFEAT' },
+    finalScoreLabel: { es: 'Puntuación final:', en: 'Final score:' },
+    restartBtn: { es: '🔄 REINICIAR', en: '🔄 RESTART' },
+    menuBtn: { es: '🏠 MENÚ', en: '🏠 MENU' },
+    victoryTitle: { es: '🏆 ¡VICTORIA!', en: '🏆 VICTORY!' },
+    victoryScoreLabel: { es: 'Puntuación final:', en: 'Final score:' },
+    winRestartBtn: { es: '🔄 JUGAR DE NUEVO', en: '🔄 PLAY AGAIN' },
+    winMenuBtn: { es: '🏠 MENÚ', en: '🏠 MENU' },
+    surrenderTitle: { es: '⚠️ ¿RENDIRSE?', en: '⚠️ SURRENDER?' },
+    surrenderText: { es: 'Perderás la partida actual. ¿Estás seguro?', en: 'You will lose the current game. Are you sure?' },
+    surrenderYes: { es: '✅ SÍ', en: '✅ YES' },
+    surrenderNo: { es: '❌ NO', en: '❌ NO' },
+    pauseMsg: { es: '⏸️ PAUSA', en: '⏸️ PAUSE' },
+    levelMessages: {
+        1: { es: '🗡️ Destruye al enemigo', en: '🗡️ Destroy the enemy' },
+        2: { es: '🛡️ Evita las bajas', en: '🛡️ Avoid casualties' },
+        3: { es: '🏰 Defiende tus posiciones', en: '🏰 Defend your positions' },
+        4: { es: '⚔️ ¡Al ataque!', en: '⚔️ Attack!' },
+        5: { es: '👹 Batalla de jefe', en: '👹 Boss battle' }
+    }
+};
+
+let currentLang = 'es';
+
+// ============================================================
+//  SISTEMA DE SONIDOS
 // ============================================================
 class SoundManager {
     constructor() {
@@ -46,36 +100,22 @@ class SoundManager {
         this.music = null;
         this.musicPlaying = false;
         this.enabled = true;
-        this.activeSounds = []; // Para detener clones en reproducción
+        this.activeSounds = [];
     }
-
     loadSound(name, url) {
         return new Promise((resolve) => {
             try {
                 const audio = new Audio(url);
                 audio.preload = 'auto';
-                audio.oncanplaythrough = () => {
-                    this.sounds[name] = audio;
-                    resolve();
-                };
-                audio.onerror = () => {
-                    this.sounds[name] = new Audio();
-                    resolve();
-                };
+                audio.oncanplaythrough = () => { this.sounds[name] = audio; resolve(); };
+                audio.onerror = () => { this.sounds[name] = new Audio(); resolve(); };
                 audio.load();
                 setTimeout(() => {
-                    if (!this.sounds[name]) {
-                        this.sounds[name] = new Audio();
-                        resolve();
-                    }
+                    if (!this.sounds[name]) { this.sounds[name] = new Audio(); resolve(); }
                 }, 2000);
-            } catch (e) {
-                this.sounds[name] = new Audio();
-                resolve();
-            }
+            } catch (e) { this.sounds[name] = new Audio(); resolve(); }
         });
     }
-
     loadMusic(url) {
         return new Promise((resolve) => {
             try {
@@ -89,22 +129,18 @@ class SoundManager {
             } catch (e) { this.music = null; resolve(); }
         });
     }
-
     play(name) {
         if (!this.enabled) return;
         if (this.sounds[name]) {
             try {
                 const clone = this.sounds[name].cloneNode();
                 clone.volume = 0.5;
-                // Guardar referencia para poder detenerlo después
                 this.activeSounds.push(clone);
                 clone.play().catch(() => {});
-                // Eliminar de la lista cuando termine
                 clone.addEventListener('ended', () => {
                     const idx = this.activeSounds.indexOf(clone);
                     if (idx !== -1) this.activeSounds.splice(idx, 1);
                 });
-                // También eliminar si se detiene manualmente
                 clone.addEventListener('pause', () => {
                     const idx = this.activeSounds.indexOf(clone);
                     if (idx !== -1) this.activeSounds.splice(idx, 1);
@@ -112,18 +148,12 @@ class SoundManager {
             } catch (e) {}
         }
     }
-
-    // Detiene todos los sonidos en reproducción (excepto la música)
     stopAllSounds() {
         for (let s of this.activeSounds) {
-            try {
-                s.pause();
-                s.currentTime = 0;
-            } catch (e) {}
+            try { s.pause(); s.currentTime = 0; } catch (e) {}
         }
         this.activeSounds = [];
     }
-
     playMusic() {
         if (!this.enabled || !this.music) return;
         if (!this.musicPlaying) {
@@ -131,7 +161,6 @@ class SoundManager {
             this.musicPlaying = true;
         }
     }
-
     stopMusic() {
         if (this.music) {
             this.music.pause();
@@ -139,13 +168,10 @@ class SoundManager {
             this.musicPlaying = false;
         }
     }
-
-    // Método para detener todo (música + efectos)
     stopAll() {
         this.stopAllSounds();
         this.stopMusic();
     }
-
     async loadAll() {
         const files = {
             'button': 'audio/button.m4a',
@@ -162,17 +188,15 @@ class SoundManager {
             await this.loadSound(name, url);
         }
         await this.loadMusic('audio/music.m4a');
-        console.log('✅ Sonidos cargados (fallback si no existen)');
+        console.log('✅ Sonidos cargados');
     }
 }
-
 const sound = new SoundManager();
 
 // ============================================================
-//  SISTEMA DE IMÁGENES (fallback con formas)
+//  SISTEMA DE IMÁGENES
 // ============================================================
 const images = {};
-
 function loadImages() {
     const list = {
         'mariscal': 'images/mariscal.png',
@@ -228,72 +252,83 @@ function loadImages() {
 }
 
 // ============================================================
+//  FUNCIONES DE TRADUCCIÓN
+// ============================================================
+function setLanguage(lang) {
+    if (lang !== 'es' && lang !== 'en') lang = 'es';
+    currentLang = lang;
+    localStorage.setItem('gameLang', lang);
+    document.querySelectorAll('.lang-flag').forEach(el => {
+        el.classList.toggle('active', el.dataset.lang === lang);
+    });
+    updateUIStrings();
+}
+function updateUIStrings() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (translations[key] && translations[key][currentLang] !== undefined) {
+            if (el.tagName === 'DIV' && key === 'instructionsText') {
+                el.innerHTML = translations[key][currentLang];
+            } else {
+                el.textContent = translations[key][currentLang];
+            }
+        }
+    });
+    if (levelIntroActive && currentLevel) {
+        const msg = translations.levelMessages[currentLevel];
+        if (msg) levelIntro.textContent = msg[currentLang];
+    }
+    if (!scoresScreen.classList.contains('hidden')) {
+        loadScores();
+    }
+}
+
+// ============================================================
 //  UTILIDADES
 // ============================================================
-function distancia(a, b) {
-    return Math.hypot(a.x - b.x, a.y - b.y);
-}
+function distancia(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function random(min, max) { return Math.random() * (max - min) + min; }
 
 // ============================================================
-//  CLASE PROYECTIL (para flechas y fuego)
+//  CLASE PROYECTIL
 // ============================================================
 class Projectile {
     constructor(x, y, target, tipo, damage, owner, speed = 5, color = null) {
-        this.x = x;
-        this.y = y;
-        this.target = target;
-        this.tipo = tipo; // 'arrow' o 'fire'
-        this.damage = damage;
-        this.owner = owner; // 'ally' o 'enemy'
-        this.speed = speed;
+        this.x = x; this.y = y; this.target = target; this.tipo = tipo;
+        this.damage = damage; this.owner = owner; this.speed = speed;
         this.active = true;
         this.radius = tipo === 'fire' ? 16 : 8;
         const dx = target.x + target.w/2 - x;
         const dy = target.y + target.h/2 - y;
         const dist = Math.hypot(dx, dy);
-        if (dist > 0) {
-            this.vx = (dx / dist) * speed;
-            this.vy = (dy / dist) * speed;
-        } else {
-            this.vx = 0;
-            this.vy = -speed;
-        }
+        if (dist > 0) { this.vx = (dx / dist) * speed; this.vy = (dy / dist) * speed; }
+        else { this.vx = 0; this.vy = -speed; }
         this.angle = Math.atan2(this.vy, this.vx);
         this.trail = [];
         this.customColor = color || null;
     }
-
     update(entities) {
         if (!this.active) return;
         this.trail.push({x: this.x, y: this.y});
         if (this.trail.length > 15) this.trail.shift();
-
         this.x += this.vx;
         this.y += this.vy;
-
         if (this.x < -50 || this.x > W() + 50 || this.y < -50 || this.y > H() + 50) {
-            this.active = false;
-            return;
+            this.active = false; return;
         }
-
-        // Colisión con muros (nivel 4)
         if (currentLevel === 4) {
             for (let wall of walls) {
                 if (this.x > wall.x && this.x < wall.x + wall.w && this.y > wall.y && this.y < wall.y + wall.h) {
-                    this.active = false;
-                    return;
+                    this.active = false; return;
                 }
             }
         }
-
         for (let e of entities) {
             if (!e.isAlive()) continue;
             const isTarget = (this.owner === 'ally' && (e.type === 'esqueleto' || e.type === 'esqueleto_arquero' || e.type === 'guerrero_oscuridad' || e.type === 'hechicera' || e.type === 'jefe' || e.type === 'cañon_enemigo')) ||
                              (this.owner === 'enemy' && (e.type === 'marshal' || e.type === 'guerrero' || e.type === 'arquero' || e.type === 'maga' || e.type === 'jinete' || e.type === 'cañon_amigo'));
             if (!isTarget) continue;
-
             if (distancia(this, {x: e.x + e.w/2, y: e.y + e.h/2}) < this.radius + Math.max(e.w, e.h)/2) {
                 e.takeDamage(this.damage);
                 this.active = false;
@@ -301,17 +336,13 @@ class Projectile {
             }
         }
     }
-
     draw(ctx) {
         if (!this.active) return;
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
-
         if (this.tipo === 'arrow') {
-            const len = 24;
-            const headLen = 8;
-            const headWidth = 6;
+            const len = 24, headLen = 8, headWidth = 6;
             ctx.fillStyle = '#8B4513';
             ctx.strokeStyle = '#4a2c0a';
             ctx.lineWidth = 2;
@@ -361,7 +392,6 @@ class Projectile {
             ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
-            // Llamas
             for (let i = 0; i < 7; i++) {
                 const angle = this.angle + i * 0.9 + Math.sin(Date.now() * 0.01 + i) * 0.3;
                 const r = this.radius + 4 + Math.sin(Date.now() * 0.02 + i * 2) * 3;
@@ -385,49 +415,33 @@ class Projectile {
 }
 
 // ============================================================
-//  CLASE PROYECTIL DE CAÑÓN (punto negro)
+//  CLASE PROYECTIL DE CAÑÓN
 // ============================================================
 class CanonBall {
     constructor(x, y, direction, isEnemy = false) {
-        this.x = x;
-        this.y = y;
-        this.radius = 10;
-        this.speed = 6 * direction;
-        this.direction = direction;
-        this.active = true;
-        this.damage = 50;
-        this.trail = [];
-        this.isEnemy = isEnemy;
+        this.x = x; this.y = y; this.radius = 10;
+        this.speed = 6 * direction; this.direction = direction;
+        this.active = true; this.damage = 50;
+        this.trail = []; this.isEnemy = isEnemy;
     }
-
     update(entities) {
         if (!this.active) return;
         this.trail.push({x: this.x, y: this.y});
         if (this.trail.length > 10) this.trail.shift();
-
         this.x += this.speed;
-
-        if (this.x < -50 || this.x > W() + 50) {
-            this.active = false;
-            return;
-        }
-
-        // Colisión con muro (nivel 4) - tanto para enemigos como aliados
+        if (this.x < -50 || this.x > W() + 50) { this.active = false; return; }
         if (currentLevel === 4) {
             for (let wall of walls) {
                 if (this.x > wall.x && this.x < wall.x + wall.w && this.y > wall.y && this.y < wall.y + wall.h) {
-                    this.active = false;
-                    return;
+                    this.active = false; return;
                 }
             }
         }
-
         for (let e of entities) {
             if (!e.isAlive()) continue;
             const isTarget = (this.isEnemy && (e.type === 'marshal' || e.type === 'guerrero' || e.type === 'arquero' || e.type === 'maga' || e.type === 'jinete')) ||
                              (!this.isEnemy && (e.type === 'esqueleto' || e.type === 'esqueleto_arquero' || e.type === 'guerrero_oscuridad' || e.type === 'hechicera' || e.type === 'jefe'));
             if (!isTarget) continue;
-
             const dist = distancia(this, {x: e.x + e.w/2, y: e.y + e.h/2});
             if (dist < this.radius + Math.max(e.w, e.h)/2) {
                 e.takeDamage(this.damage);
@@ -436,7 +450,6 @@ class CanonBall {
             }
         }
     }
-
     draw(ctx) {
         if (!this.active) return;
         for (let i = 0; i < this.trail.length; i++) {
@@ -463,18 +476,14 @@ class CanonBall {
 }
 
 // ============================================================
-//  CLASE BASE: ENTIDAD
+//  CLASE BASE ENTIDAD
 // ============================================================
 class Entity {
     constructor(x, y, type, maxHP, speed) {
-        this.x = x;
-        this.y = y;
-        this.type = type;
-        this.maxHP = maxHP;
-        this.hp = maxHP;
+        this.x = x; this.y = y; this.type = type;
+        this.maxHP = maxHP; this.hp = maxHP;
         this.speed = speed;
-        this.vx = 0;
-        this.vy = 0;
+        this.vx = 0; this.vy = 0;
         this.direction = 1;
         this.active = true;
         this.attackCooldown = 0;
@@ -486,35 +495,27 @@ class Entity {
         this.attackInterval = 30;
         this.attackAnim = 0;
         this.shootAnim = 0;
-        this.w = 30;
-        this.h = 40;
+        this.w = 30; this.h = 40;
         this.target = null;
-        this.rangeMin = 0;
-        this.rangeMax = 0;
+        this.rangeMin = 0; this.rangeMax = 0;
         this.projectileSpeed = 5;
         this.projectileDamage = 0;
         this.projectileType = 'arrow';
         this.rushMode = false;
         this.goalX = null;
-        // Para saber si es enemigo (usado en restricción de nivel 4)
         this.isEnemy = false;
     }
-
     takeDamage(dmg) {
         if (this.shieldActive) dmg = Math.floor(dmg * 0.3);
         this.hp -= dmg;
         if (this.hp <= 0) { this.hp = 0; this.active = false; }
     }
-
     isAlive() { return this.active && this.hp > 0; }
-
-    // Colisión con muros (nivel 4)
     checkWallCollision() {
         if (currentLevel !== 4) return;
         for (let wall of walls) {
             if (this.x < wall.x + wall.w && this.x + this.w > wall.x &&
                 this.y < wall.y + wall.h && this.y + this.h > wall.y) {
-                // Resolver empujando hacia la dirección opuesta
                 const overlapX = Math.min(this.x + this.w - wall.x, wall.x + wall.w - this.x);
                 const overlapY = Math.min(this.y + this.h - wall.y, wall.y + wall.h - this.y);
                 if (overlapX < overlapY) {
@@ -527,20 +528,15 @@ class Entity {
             }
         }
     }
-
     move() {
-        this.x += this.vx;
-        this.y += this.vy;
+        this.x += this.vx; this.y += this.vy;
         const groundY = H() * 0.3;
         this.y = clamp(this.y, groundY, H() - 20);
         this.x = clamp(this.x, 0, W());
         if (this.vx > 0) this.direction = 1;
         else if (this.vx < 0) this.direction = -1;
-
-        // Colisión con muros (nivel 4)
         this.checkWallCollision();
     }
-
     update() {
         if (this.attackCooldown > 0) this.attackCooldown--;
         if (this.shieldTimer > 0) { this.shieldTimer--; this.shieldActive = true; } else { this.shieldActive = false; }
@@ -548,12 +544,11 @@ class Entity {
         if (this.shootAnim > 0) this.shootAnim--;
         this.move();
     }
-
-    draw(ctx, images) { /* sobrescrito */ }
+    draw(ctx, images) {}
 }
 
 // ============================================================
-//  UNIDADES ALIADAS (SIN CURACIÓN) - CON BLOQUEO POR CAÑONES
+//  UNIDADES ALIADAS
 // ============================================================
 class Guerrero extends Entity {
     constructor(x, y, goalX = null) {
@@ -582,7 +577,6 @@ class Guerrero extends Entity {
     update(aliados, enemigos, cañones) {
         super.update();
         if (this.goalX !== null) {
-            // Buscar cañones enemigos bloqueando el camino
             let blockingCanon = null;
             let minDist = Infinity;
             for (let c of cañones) {
@@ -593,7 +587,6 @@ class Guerrero extends Entity {
                 }
             }
             if (blockingCanon) {
-                // Atacar al cañón
                 const dx = blockingCanon.x - this.x;
                 const dy = blockingCanon.y - this.y;
                 const dist = Math.hypot(dx, dy);
@@ -612,8 +605,6 @@ class Guerrero extends Entity {
                 }
                 return;
             }
-
-            // En nivel 4, solo atacar enemigos en la misma fila y en el camino
             let target = null;
             let minEnemyDist = Infinity;
             for (let e of enemigos) {
@@ -643,7 +634,6 @@ class Guerrero extends Entity {
                     }
                 }
             } else {
-                // Moverse hacia la base
                 const dx = this.goalX - this.x;
                 const dist = Math.abs(dx);
                 if (dist > 5) {
@@ -656,7 +646,6 @@ class Guerrero extends Entity {
                 this.direction = 1;
             }
         } else {
-            // Comportamiento normal
             let closest = null, minDist = Infinity;
             for (let e of enemigos) { if (!e.isAlive()) continue; const d = distancia(this, e); if (d < minDist) { minDist = d; closest = e; } }
             if (closest) {
@@ -704,7 +693,6 @@ class Arquero extends Entity {
     update(aliados, enemigos, proyectiles, cañones) {
         super.update();
         if (this.goalX !== null) {
-            // Buscar cañones enemigos bloqueando
             let blockingCanon = null;
             let minDist = Infinity;
             for (let c of cañones) {
@@ -715,17 +703,8 @@ class Arquero extends Entity {
                 }
             }
             if (blockingCanon && minDist < this.rangeMax) {
-                // Disparar al cañón
                 if (this.attackCooldown <= 0) {
-                    const p = new Projectile(
-                        this.x + this.w/2,
-                        this.y + this.h/2,
-                        blockingCanon,
-                        this.projectileType,
-                        this.projectileDamage,
-                        'ally',
-                        this.projectileSpeed
-                    );
+                    const p = new Projectile(this.x + this.w/2, this.y + this.h/2, blockingCanon, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
                     proyectiles.push(p);
                     this.attackCooldown = this.attackInterval;
                     this.shooting = true;
@@ -734,8 +713,6 @@ class Arquero extends Entity {
                 this.vx = 0; this.vy = 0;
                 return;
             }
-
-            // En nivel 4, solo atacar enemigos en la misma fila y en el camino
             let target = null;
             let minEnemyDist = Infinity;
             for (let e of enemigos) {
@@ -761,15 +738,7 @@ class Arquero extends Entity {
                 } else {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(
-                            this.x + this.w/2,
-                            this.y + this.h/2,
-                            target,
-                            this.projectileType,
-                            this.projectileDamage,
-                            'ally',
-                            this.projectileSpeed
-                        );
+                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.shooting = true;
@@ -777,7 +746,6 @@ class Arquero extends Entity {
                     }
                 }
             } else {
-                // Moverse hacia la base
                 const dx = this.goalX - this.x;
                 const dist = Math.abs(dx);
                 if (dist > 5) {
@@ -790,7 +758,6 @@ class Arquero extends Entity {
                 this.direction = 1;
             }
         } else {
-            // Comportamiento normal
             let closest = null, minDist = Infinity;
             for (let e of enemigos) { if (!e.isAlive()) continue; const d = distancia(this, e); if (d < minDist) { minDist = d; closest = e; } }
             if (closest) {
@@ -804,15 +771,7 @@ class Arquero extends Entity {
                 } else {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(
-                            this.x + this.w/2,
-                            this.y + this.h/2,
-                            closest,
-                            this.projectileType,
-                            this.projectileDamage,
-                            'ally',
-                            this.projectileSpeed
-                        );
+                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, closest, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.shooting = true;
@@ -868,7 +827,6 @@ class Maga extends Entity {
             sound.play('teleport');
         }
         if (this.goalX !== null) {
-            // Buscar cañones enemigos
             let blockingCanon = null;
             let minDist = Infinity;
             for (let c of cañones) {
@@ -880,15 +838,7 @@ class Maga extends Entity {
             }
             if (blockingCanon && minDist < this.rangeMax) {
                 if (this.attackCooldown <= 0) {
-                    const p = new Projectile(
-                        this.x + this.w/2,
-                        this.y + this.h/2,
-                        blockingCanon,
-                        this.projectileType,
-                        this.projectileDamage,
-                        'ally',
-                        this.projectileSpeed
-                    );
+                    const p = new Projectile(this.x + this.w/2, this.y + this.h/2, blockingCanon, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
                     proyectiles.push(p);
                     this.attackCooldown = this.attackInterval;
                     this.launchAnim = 10;
@@ -897,7 +847,6 @@ class Maga extends Entity {
                 this.vx = 0; this.vy = 0;
                 return;
             }
-
             let target = null;
             let minEnemyDist = Infinity;
             for (let e of enemigos) {
@@ -923,15 +872,7 @@ class Maga extends Entity {
                 } else {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(
-                            this.x + this.w/2,
-                            this.y + this.h/2,
-                            target,
-                            this.projectileType,
-                            this.projectileDamage,
-                            'ally',
-                            this.projectileSpeed
-                        );
+                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.launchAnim = 10;
@@ -964,15 +905,7 @@ class Maga extends Entity {
                 } else {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(
-                            this.x + this.w/2,
-                            this.y + this.h/2,
-                            closest,
-                            this.projectileType,
-                            this.projectileDamage,
-                            'ally',
-                            this.projectileSpeed
-                        );
+                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, closest, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.launchAnim = 10;
@@ -1011,7 +944,6 @@ class Jinete extends Entity {
     update(aliados, enemigos, cañones) {
         super.update();
         if (this.goalX !== null) {
-            // Buscar cañones bloqueando
             let blockingCanon = null;
             let minDist = Infinity;
             for (let c of cañones) {
@@ -1040,7 +972,6 @@ class Jinete extends Entity {
                 }
                 return;
             }
-
             let target = null;
             let minEnemyDist = Infinity;
             for (let e of enemigos) {
@@ -1094,7 +1025,7 @@ class Jinete extends Entity {
 }
 
 // ============================================================
-//  MARISCAL (JUGADOR)
+//  MARISCAL
 // ============================================================
 class Marshal extends Entity {
     constructor(x, y) {
@@ -1105,7 +1036,6 @@ class Marshal extends Entity {
         this.shootCooldown = 0;
         this.shootAnim = 0;
     }
-
     update(keys) {
         let dx = 0, dy = 0;
         if (keys['ArrowLeft']) dx = -1;
@@ -1126,14 +1056,11 @@ class Marshal extends Entity {
             if (Math.abs(this.vy) < 0.1) this.vy = 0;
             this.state = 'idle';
         }
-
-        // Restricciones de movimiento según nivel
         if (currentLevel === 2) {
             this.x = clamp(this.x, 0, W() * 0.5 - this.w);
         } else if (currentLevel === 3 || currentLevel === 4) {
             this.x = clamp(this.x, 0, W() * 0.25 - this.w);
         }
-
         this.x += this.vx;
         this.y += this.vy;
         const groundY = H() * 0.3;
@@ -1141,16 +1068,12 @@ class Marshal extends Entity {
         this.x = clamp(this.x, 0, W());
         if (this.vx > 0) this.direction = 1;
         else if (this.vx < 0) this.direction = -1;
-
-        // Colisión con muro (nivel 4) - ya se maneja en checkWallCollision de Entity, pero llamamos a super.update que lo incluye
         this.checkWallCollision();
-
         if (this.attackCooldown > 0) this.attackCooldown--;
         if (this.shootCooldown > 0) this.shootCooldown--;
         if (this.shieldTimer > 0) { this.shieldTimer--; this.shieldActive = true; } else { this.shieldActive = false; }
         if (this.attackAnim > 0) this.attackAnim--;
         if (this.shootAnim > 0) this.shootAnim--;
-
         if (keys['j'] || keys['J']) {
             if (this.attackCooldown <= 0) {
                 this.attackCooldown = 20;
@@ -1192,22 +1115,13 @@ class Marshal extends Entity {
                     if (d < minDist) { minDist = d; target = c; }
                 }
                 if (target && minDist < 400) {
-                    const p = new Projectile(
-                        this.x + (this.direction === 1 ? this.w : 0),
-                        this.y + this.h/2,
-                        target,
-                        'fire',
-                        this.shotDamage,
-                        'ally',
-                        6
-                    );
+                    const p = new Projectile(this.x + (this.direction === 1 ? this.w : 0), this.y + this.h/2, target, 'fire', this.shotDamage, 'ally', 6);
                     proyectiles.push(p);
                     sound.play('fire');
                 }
             }
         }
     }
-
     draw(ctx, images) {
         if (!this.isAlive()) return;
         let img = images.mariscal;
@@ -1229,7 +1143,7 @@ class Marshal extends Entity {
 }
 
 // ============================================================
-//  ENEMIGOS (SIN CURACIÓN)
+//  ENEMIGOS
 // ============================================================
 class Esqueleto extends Entity {
     constructor(x, y, rushMode = false, goalX = null) {
@@ -1262,12 +1176,9 @@ class Esqueleto extends Entity {
     update(aliados, enemigos, cañones) {
         super.update();
         const allTargets = aliados.concat([marshal]);
-
-        // Restricción nivel 4: los enemigos no pasan de la mitad del campo
         if (currentLevel === 4) {
             this.x = Math.max(this.x, W() * 0.5);
         }
-
         if (this.rushMode) {
             let targetCanon = null;
             let minCanonDist = Infinity;
@@ -1295,7 +1206,6 @@ class Esqueleto extends Entity {
                 }
                 return;
             }
-
             let target = null;
             let minDist = Infinity;
             for (let a of allTargets) {
@@ -1427,12 +1337,9 @@ class EsqueletoArquero extends Entity {
     update(aliados, enemigos, proyectiles, cañones) {
         super.update();
         const allTargets = aliados.concat([marshal]);
-
-        // Restricción nivel 4
         if (currentLevel === 4) {
             this.x = Math.max(this.x, W() * 0.5);
         }
-
         if (this.rushMode) {
             let target = null;
             let minDist = Infinity;
@@ -1449,15 +1356,7 @@ class EsqueletoArquero extends Entity {
                 if (dist <= this.rangeMax && dist >= this.rangeMin) {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(
-                            this.x + this.w/2,
-                            this.y + this.h/2,
-                            target,
-                            this.projectileType,
-                            this.projectileDamage,
-                            'enemy',
-                            this.projectileSpeed
-                        );
+                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.shooting = true;
@@ -1497,15 +1396,7 @@ class EsqueletoArquero extends Entity {
                     } else {
                         this.vx = 0; this.vy = 0;
                         if (this.attackCooldown <= 0) {
-                            const p = new Projectile(
-                                this.x + this.w/2,
-                                this.y + this.h/2,
-                                target,
-                                this.projectileType,
-                                this.projectileDamage,
-                                'enemy',
-                                this.projectileSpeed
-                            );
+                            const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
                             proyectiles.push(p);
                             this.attackCooldown = this.attackInterval;
                             this.shooting = true;
@@ -1533,15 +1424,7 @@ class EsqueletoArquero extends Entity {
                     } else {
                         this.vx = 0; this.vy = 0;
                         if (this.attackCooldown <= 0) {
-                            const p = new Projectile(
-                                this.x + this.w/2,
-                                this.y + this.h/2,
-                                target,
-                                this.projectileType,
-                                this.projectileDamage,
-                                'enemy',
-                                this.projectileSpeed
-                            );
+                            const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
                             proyectiles.push(p);
                             this.attackCooldown = this.attackInterval;
                             this.shooting = true;
@@ -1587,11 +1470,9 @@ class GuerreroOscuridad extends Entity {
     update(aliados, enemigos, cañones) {
         super.update();
         const allTargets = aliados.concat([marshal]);
-
         if (currentLevel === 4) {
             this.x = Math.max(this.x, W() * 0.5);
         }
-
         if (this.rushMode) {
             let targetCanon = null;
             let minCanonDist = Infinity;
@@ -1619,7 +1500,6 @@ class GuerreroOscuridad extends Entity {
                 }
                 return;
             }
-
             let target = null;
             let minDist = Infinity;
             for (let a of allTargets) {
@@ -1757,11 +1637,9 @@ class Hechicera extends Entity {
             sound.play('teleport');
         }
         const allTargets = aliados.concat([marshal]);
-
         if (currentLevel === 4) {
             this.x = Math.max(this.x, W() * 0.5);
         }
-
         if (this.rushMode) {
             let target = null;
             let minDist = Infinity;
@@ -1778,15 +1656,7 @@ class Hechicera extends Entity {
                 if (dist <= this.rangeMax && dist >= this.rangeMin) {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(
-                            this.x + this.w/2,
-                            this.y + this.h/2,
-                            target,
-                            this.projectileType,
-                            this.projectileDamage,
-                            'enemy',
-                            this.projectileSpeed
-                        );
+                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.launchAnim = 10;
@@ -1826,15 +1696,7 @@ class Hechicera extends Entity {
                     } else {
                         this.vx = 0; this.vy = 0;
                         if (this.attackCooldown <= 0) {
-                            const p = new Projectile(
-                                this.x + this.w/2,
-                                this.y + this.h/2,
-                                target,
-                                this.projectileType,
-                                this.projectileDamage,
-                                'enemy',
-                                this.projectileSpeed
-                            );
+                            const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
                             proyectiles.push(p);
                             this.attackCooldown = this.attackInterval;
                             this.launchAnim = 10;
@@ -1862,15 +1724,7 @@ class Hechicera extends Entity {
                     } else {
                         this.vx = 0; this.vy = 0;
                         if (this.attackCooldown <= 0) {
-                            const p = new Projectile(
-                                this.x + this.w/2,
-                                this.y + this.h/2,
-                                target,
-                                this.projectileType,
-                                this.projectileDamage,
-                                'enemy',
-                                this.projectileSpeed
-                            );
+                            const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
                             proyectiles.push(p);
                             this.attackCooldown = this.attackInterval;
                             this.launchAnim = 10;
@@ -1887,7 +1741,7 @@ class Hechicera extends Entity {
 }
 
 // ============================================================
-//  JEFE FINAL - MÁS PODEROSO
+//  JEFE FINAL
 // ============================================================
 class JefeFinal extends Entity {
     constructor(x, y) {
@@ -1903,7 +1757,6 @@ class JefeFinal extends Entity {
         this.shootTimer = 0;
         this.isEnemy = true;
     }
-
     draw(ctx, images) {
         if (!this.isAlive()) return;
         let img = this.shieldActive ? images.jefe_shield : (this.attackAnim > 0 ? images.jefe_attack : images.jefe);
@@ -1916,19 +1769,13 @@ class JefeFinal extends Entity {
             ctx.fillStyle = '#1A1A2E'; ctx.fillRect(this.x, this.y, this.w, this.h);
             ctx.fillStyle = '#fff'; ctx.font = '14px Arial'; ctx.fillText('JEFE', this.x+8, this.y+40);
         }
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.fillRect(this.x, this.y-12, this.w, 8);
-        ctx.fillStyle = '#e74c3c';
-        ctx.fillRect(this.x+2, this.y-10, (this.w-4)*(this.hp/this.maxHP), 4);
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(this.x, this.y-12, this.w, 8);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(this.x, this.y-12, this.w, 8);
+        ctx.fillStyle = '#e74c3c'; ctx.fillRect(this.x+2, this.y-10, (this.w-4)*(this.hp/this.maxHP), 4);
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(this.x, this.y-12, this.w, 8);
     }
-
     update(aliados, enemigos, proyectiles) {
         super.update();
         const allTargets = aliados.concat([marshal]);
-
         if (this.isAlive()) {
             this.shootTimer++;
             if (this.shootTimer >= this.fireballInterval) {
@@ -1944,22 +1791,12 @@ class JefeFinal extends Entity {
                     }
                 }
                 if (target && minDist < 500) {
-                    const p = new Projectile(
-                        this.x + (this.direction === 1 ? this.w : 0),
-                        this.y + this.h/2,
-                        target,
-                        'fire',
-                        this.fireballDamage,
-                        'enemy',
-                        4,
-                        true
-                    );
+                    const p = new Projectile(this.x + (this.direction === 1 ? this.w : 0), this.y + this.h/2, target, 'fire', this.fireballDamage, 'enemy', 4, true);
                     proyectiles.push(p);
                     sound.play('fire');
                 }
             }
         }
-
         let target = null;
         let minDist = Infinity;
         for (let a of allTargets) {
@@ -1992,26 +1829,22 @@ class JefeFinal extends Entity {
 }
 
 // ============================================================
-//  CAÑÓN (con imagen) - DISPARO CADA 3 SEGUNDOS
+//  CAÑÓN
 // ============================================================
 class Canon {
     constructor(x, y, isEnemy = false) {
-        this.x = x;
-        this.y = y;
-        this.w = 30;
-        this.h = 30;
+        this.x = x; this.y = y; this.w = 30; this.h = 30;
         this.hp = isEnemy ? 200 : 150;
         this.maxHP = this.hp;
         this.active = true;
         this.shootTimer = 0;
-        this.shootInterval = 180; // 3 segundos a 60 fps
+        this.shootInterval = 180;
         this.damage = 50;
         this.direction = isEnemy ? -1 : 1;
         this.bullets = [];
         this.isEnemy = isEnemy;
         this.type = isEnemy ? 'cañon_enemigo' : 'cañon_amigo';
     }
-
     draw(ctx, images) {
         if (!this.active) return;
         const img = images.cañon;
@@ -2035,7 +1868,6 @@ class Canon {
         ctx.fillStyle = '#2ecc71';
         ctx.fillRect(this.x+2, this.y-6, (this.w-4)*(this.hp/this.maxHP), 3);
     }
-
     update(targets) {
         if (!this.active) return;
         this.shootTimer++;
@@ -2067,7 +1899,6 @@ class Canon {
             this.bullets.push(ball);
             sound.play('canon');
         }
-
         for (let i = this.bullets.length - 1; i >= 0; i--) {
             const b = this.bullets[i];
             const targetList = this.isEnemy ? [marshal, ...aliados] : enemigos;
@@ -2077,13 +1908,11 @@ class Canon {
             }
         }
     }
-
     drawBullets(ctx) {
         for (let b of this.bullets) {
             b.draw(ctx);
         }
     }
-
     takeDamage(dmg) {
         this.hp -= dmg;
         if (this.hp <= 0) { this.hp = 0; this.active = false; }
@@ -2092,34 +1921,26 @@ class Canon {
 }
 
 // ============================================================
-//  CLASE MURO (para nivel 4) - UN SOLO MURO VERTICAL
+//  MURO
 // ============================================================
 class Wall {
     constructor(x, y, w, h) {
-        this.x = x;
-        this.y = y;
-        this.w = w;
-        this.h = h;
+        this.x = x; this.y = y; this.w = w; this.h = h;
         this.active = true;
     }
-
     draw(ctx) {
         if (!this.active) return;
-        // Dibujar ladrillos
-        const brickW = 20;
-        const brickH = 10;
+        const brickW = 20, brickH = 10;
         ctx.fillStyle = '#8B4513';
         ctx.fillRect(this.x, this.y, this.w, this.h);
         ctx.strokeStyle = '#5D3A1A';
         ctx.lineWidth = 1;
-        // Líneas horizontales
         for (let y = this.y; y < this.y + this.h; y += brickH) {
             ctx.beginPath();
             ctx.moveTo(this.x, y);
             ctx.lineTo(this.x + this.w, y);
             ctx.stroke();
         }
-        // Líneas verticales alternadas
         let offset = 0;
         for (let y = this.y; y < this.y + this.h; y += brickH) {
             for (let x = this.x + offset; x < this.x + this.w; x += brickW) {
@@ -2130,7 +1951,6 @@ class Wall {
             }
             offset = (offset === 0) ? brickW/2 : 0;
         }
-        // Borde exterior
         ctx.strokeStyle = '#3E2723';
         ctx.lineWidth = 2;
         ctx.strokeRect(this.x, this.y, this.w, this.h);
@@ -2176,25 +1996,21 @@ let gameOverFlag = false;
 let infiltrationSuccess = false;
 let introTimer = 0;
 let levelIntroActive = false;
-const levelMessages = {
-    1: '🗡️ Destruye al enemigo',
-    2: '🛡️ Evita las bajas',
-    3: '🏰 Defiende tus posiciones',
-    4: '⚔️ ¡Al ataque!',
-    5: '👹 Batalla de jefe'
-};
 
 // ============================================================
 //  FUNCIONES DE INTRO DE NIVEL
 // ============================================================
 function showLevelIntro(level) {
-    const msg = levelMessages[level] || `Nivel ${level}`;
-    levelIntro.textContent = msg;
+    const msg = translations.levelMessages[level];
+    if (msg) {
+        levelIntro.textContent = msg[currentLang] || msg.es;
+    } else {
+        levelIntro.textContent = `Nivel ${level}`;
+    }
     levelIntro.classList.add('show');
     levelIntroActive = true;
     introTimer = 120;
 }
-
 function updateLevelIntro() {
     if (levelIntroActive) {
         introTimer--;
@@ -2206,7 +2022,7 @@ function updateLevelIntro() {
 }
 
 // ============================================================
-//  FUNCIÓN PARA DEVOLVER UNIDADES SOBREVIVIENTES A LA RESERVA
+//  FUNCIONES DE GESTIÓN DE UNIDADES
 // ============================================================
 function returnSurvivingUnits() {
     for (let a of aliados) {
@@ -2222,9 +2038,6 @@ function returnSurvivingUnits() {
     updateUI();
 }
 
-// ============================================================
-//  FUNCIONES DE REINICIO COMPLETO
-// ============================================================
 function fullReset() {
     totalEnemyKills = 0;
     totalAllyKills = 0;
@@ -2246,9 +2059,7 @@ function fullReset() {
         marshal.x = W() * 0.4;
         marshal.y = H() * 0.6;
     }
-    document.getElementById('diamondValue') && (document.getElementById('diamondValue').textContent = '0');
     updateUI();
-    // Detener todos los sonidos al resetear
     sound.stopAll();
 }
 
@@ -2256,7 +2067,6 @@ function fullReset() {
 //  FUNCIONES DE NIVEL
 // ============================================================
 function loadLevel(level) {
-    // Detener todos los sonidos antes de cambiar de nivel
     sound.stopAll();
 
     currentLevel = level;
@@ -2273,10 +2083,10 @@ function loadLevel(level) {
     gameOverFlag = false;
     infiltrationSuccess = false;
 
+    // Configurar límites según nivel
     if (level === 4) {
-        MAX_FIELD_UNITS = 80;   // Aliados máximos en nivel 4
-        MAX_ENEMIES_LEVEL = 40; // Enemigos máximos en nivel 4
-        // Crear un solo muro vertical en la zona izquierda
+        MAX_FIELD_UNITS = 80;
+        MAX_ENEMIES_LEVEL = 40;
         const w = W();
         const h = H();
         const groundY = h * 0.3;
@@ -2287,14 +2097,14 @@ function loadLevel(level) {
         const wallY = groundY + (maxY - groundY - wallH) / 2;
         walls.push(new Wall(wallX, wallY, wallW, wallH));
     } else if (level === 3) {
-        MAX_FIELD_UNITS = 40;   // Aliados máximos en nivel 3
-        MAX_ENEMIES_LEVEL = 80; // Enemigos máximos en nivel 3
+        MAX_FIELD_UNITS = 40;
+        MAX_ENEMIES_LEVEL = 80;
     } else if (level === 2) {
         MAX_FIELD_UNITS = 200;
         MAX_ENEMIES_LEVEL = 200;
     } else if (level === 5) {
-        MAX_FIELD_UNITS = 20;   // Nivel 5: solo 20 aliados en campo
-        MAX_ENEMIES_LEVEL = 1;  // Solo el jefe (no aplica spawn)
+        MAX_FIELD_UNITS = 20;
+        MAX_ENEMIES_LEVEL = 1;
     } else {
         MAX_FIELD_UNITS = 200;
         MAX_ENEMIES_LEVEL = 200;
@@ -2336,7 +2146,7 @@ function loadLevel(level) {
             break;
         case 4:
             levelObjective = 'infiltrate';
-            levelMaxTime = 180;
+            levelMaxTime = 120;
             const enemyCanonX = W() * 0.85;
             const groundY4 = H() * 0.3;
             const maxY4 = H() - 20;
@@ -2351,6 +2161,13 @@ function loadLevel(level) {
             break;
         default:
             levelObjective = 'killAll';
+    }
+
+    // Mostrar/ocultar el reloj según nivel
+    if (levelMaxTime > 0 && (level === 2 || level === 3 || level === 4)) {
+        timerContainer.style.display = 'flex';
+    } else {
+        timerContainer.style.display = 'none';
     }
 
     gameRunning = true;
@@ -2375,7 +2192,6 @@ function registerAllyDeath() {
     levelAllyKills++;
     updateUI();
 }
-
 function registerEnemyDeath() {
     totalEnemyKills++;
     levelEnemyKills++;
@@ -2383,7 +2199,7 @@ function registerEnemyDeath() {
 }
 
 // ============================================================
-//  FUNCIONES DE SPAWN ORGANIZADO (enemigos)
+//  SPAWN DE ENEMIGOS
 // ============================================================
 function generateGroup(level) {
     let type, count;
@@ -2410,9 +2226,7 @@ function generateGroup(level) {
         type = 'esqueleto';
         count = 3 + Math.floor(Math.random() * 3);
     }
-
     if (count > 12) count = 12;
-
     const maxAllowed = MAX_ENEMIES_LEVEL - enemigos.length;
     if (maxAllowed <= 0) return [];
     count = Math.min(count, maxAllowed);
@@ -2421,32 +2235,21 @@ function generateGroup(level) {
     const groundY = H() * 0.3;
     const maxY = H() - 20;
     const rush = (level === 3);
-
     const spacingX = 30;
     const totalWidth = (count - 1) * spacingX;
     const startX = W() * 0.78 + (W() * 0.22 - totalWidth) / 2;
     const baseY = groundY + 10 + Math.random() * (maxY - groundY - 20);
-
     for (let i = 0; i < count; i++) {
         const x = startX + i * spacingX;
         const y = baseY + (Math.random() - 0.5) * 20;
         let enemy;
         const goal = null;
         switch (type) {
-            case 'esqueleto':
-                enemy = new Esqueleto(x, y, rush, goal);
-                break;
-            case 'esqueleto_arquero':
-                enemy = new EsqueletoArquero(x, y, rush, goal);
-                break;
-            case 'guerrero_oscuridad':
-                enemy = new GuerreroOscuridad(x, y, rush, goal);
-                break;
-            case 'hechicera':
-                enemy = new Hechicera(x, y, rush, goal);
-                break;
-            default:
-                enemy = new Esqueleto(x, y, rush, goal);
+            case 'esqueleto': enemy = new Esqueleto(x, y, rush, goal); break;
+            case 'esqueleto_arquero': enemy = new EsqueletoArquero(x, y, rush, goal); break;
+            case 'guerrero_oscuridad': enemy = new GuerreroOscuridad(x, y, rush, goal); break;
+            case 'hechicera': enemy = new Hechicera(x, y, rush, goal); break;
+            default: enemy = new Esqueleto(x, y, rush, goal);
         }
         group.push(enemy);
     }
@@ -2454,17 +2257,15 @@ function generateGroup(level) {
 }
 
 // ============================================================
-//  NUEVA FUNCIÓN: RECLUTAR GRUPOS
+//  RECLUTAR GRUPOS
 // ============================================================
 function spawnGroup(type, count) {
     if (!gameRunning || paused || gameOverFlag) return;
     if (availableUnits[type] <= 0) return;
-
     const fieldCount = aliados.filter(a => a.isAlive()).length;
     let maxCanSpawn = Math.min(availableUnits[type], MAX_FIELD_UNITS - fieldCount);
     if (maxCanSpawn <= 0) return;
     const toSpawn = Math.min(count, maxCanSpawn);
-
     const baseX = marshal.x + marshal.direction * 30;
     const baseY = marshal.y + 10;
     const cols = 5;
@@ -2498,7 +2299,6 @@ function spawnGroup(type, count) {
 // ============================================================
 function update() {
     if (!gameRunning || paused || gameOverFlag) return;
-
     updateLevelIntro();
 
     if (levelMaxTime > 0) {
@@ -2522,7 +2322,6 @@ function update() {
         }
     }
 
-    // NIVEL 4: Comprobar si alguna unidad aliada ha llegado a la base enemiga (x > 92%)
     if (levelObjective === 'infiltrate' && !infiltrationSuccess) {
         for (let a of aliados) {
             if (a.isAlive() && a.x + a.w > W() * 0.92) {
@@ -2533,10 +2332,8 @@ function update() {
         }
     }
 
-    // Actualizar mariscal
     marshal.update(keys);
 
-    // Actualizar aliados
     for (let a of aliados) {
         if (a.isAlive()) {
             if (a.type === 'arquero' || a.type === 'maga') {
@@ -2553,7 +2350,6 @@ function update() {
         }
     }
 
-    // Actualizar enemigos
     for (let e of enemigos) {
         if (e.isAlive()) {
             if (e.type === 'esqueleto_arquero' || e.type === 'hechicera') {
@@ -2572,14 +2368,12 @@ function update() {
         }
     }
 
-    // Proyectiles
     const allEntities = aliados.concat(enemigos).concat([marshal]).concat(cañones.filter(c => c.active));
     for (let p of proyectiles) {
         p.update(allEntities);
     }
     proyectiles = proyectiles.filter(p => p.active);
 
-    // Cañones
     for (let c of cañones) {
         if (!c.active) continue;
         if (c.isEnemy) {
@@ -2590,7 +2384,6 @@ function update() {
         }
     }
 
-    // SPAWN ORGANIZADO (enemigos)
     if (levelObjective === 'timeKills' || levelObjective === 'defendBase' || levelObjective === 'infiltrate') {
         enemySpawnTimer++;
         let spawnInterval = 150;
@@ -2611,19 +2404,16 @@ function update() {
         }
     }
 
-    // Fin de nivel 1
     if (levelObjective === 'killAll' && enemigos.length === 0 && !gameOverFlag) {
         loadLevel(2);
         return;
     }
 
-    // NIVEL 5: Jefe - si el jefe muere, victoria
     if (levelObjective === 'boss' && enemigos.length === 0 && !gameOverFlag) {
         victory();
         return;
     }
 
-    // Defensa base (nivel 3)
     if (levelObjective === 'defendBase') {
         for (let e of enemigos) {
             if (e.isAlive() && e.x < W() * 0.05) {
@@ -2634,7 +2424,6 @@ function update() {
         }
     }
 
-    // Muerte del mariscal
     if (!marshal.isAlive()) {
         gameOver();
         return;
@@ -2649,7 +2438,6 @@ function update() {
 function draw() {
     const w = W(), h = H();
     ctx.clearRect(0, 0, w, h);
-
     const skyHeight = h * 0.3;
     const groundY = skyHeight;
 
@@ -2696,7 +2484,6 @@ function draw() {
         ctx.fillRect(x, y, 4, 4);
     }
 
-    // Base enemiga (nivel 4)
     if (levelObjective === 'infiltrate') {
         ctx.fillStyle = 'rgba(200, 0, 0, 0.15)';
         ctx.fillRect(W() * 0.92, groundY, W() * 0.08, h - groundY);
@@ -2708,7 +2495,6 @@ function draw() {
         ctx.fillStyle = 'white';
         ctx.font = '14px Arial';
         ctx.fillText('🏴 BASE ENEMIGA', W() * 0.92 + 5, groundY + 25);
-        // Límite para el mariscal
         ctx.fillStyle = 'rgba(255, 255, 0, 0.15)';
         ctx.fillRect(W() * 0.85, groundY, 10, h - groundY);
         ctx.fillStyle = 'rgba(255, 255, 0, 0.5)';
@@ -2716,12 +2502,10 @@ function draw() {
         ctx.fillText('🚫', W() * 0.85, groundY + 30);
     }
 
-    // Dibujar muros (nivel 4)
     for (let wall of walls) {
         wall.draw(ctx);
     }
 
-    // Cañones y balas
     for (let c of cañones) {
         c.draw(ctx, images);
         c.drawBullets(ctx);
@@ -2756,22 +2540,15 @@ function draw() {
 //  UI Y ACTUALIZACIÓN
 // ============================================================
 function updateUI() {
-    if (marshal) marshalHPSpan.textContent = Math.floor(marshal.hp);
+    enemyKillsSpan.textContent = levelEnemyKills;
+    allyKillsSpan.textContent = levelAllyKills;
 
-    if (currentLevel === 2) {
-        killLabel.textContent = '⚔️ N2';
-        enemyKillsSpan.textContent = levelEnemyKills;
-        allyKillsSpan.textContent = levelAllyKills;
-    } else {
-        killLabel.textContent = '⚔️';
-        enemyKillsSpan.textContent = totalEnemyKills;
-        allyKillsSpan.textContent = totalAllyKills;
+    if (timerContainer.style.display !== 'none' && levelMaxTime > 0) {
+        const remaining = Math.max(0, levelMaxTime - levelTimer);
+        const mins = Math.floor(remaining / 60);
+        const secs = Math.floor(remaining % 60);
+        timerSpan.textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
     }
-
-    const remaining = levelMaxTime > 0 ? Math.max(0, levelMaxTime - levelTimer) : 0;
-    const mins = Math.floor(remaining / 60);
-    const secs = Math.floor(remaining % 60);
-    timerSpan.textContent = levelMaxTime > 0 ? `${mins}:${secs.toString().padStart(2,'0')}` : '∞';
 
     unitsSpan.textContent = `G:${availableUnits.guerrero} A:${availableUnits.arquero} M:${availableUnits.maga} J:${availableUnits.jinete}`;
     const fieldCount = aliados.filter(a => a.isAlive()).length;
@@ -2785,7 +2562,7 @@ function victory() {
     if (gameOverFlag) return;
     gameOverFlag = true;
     gameRunning = false;
-    sound.stopAll();  // Detener todos los sonidos
+    sound.stopAll();
     sound.stopMusic();
     sound.play('victory');
     const finalScore = totalEnemyKills - totalAllyKills;
@@ -2793,12 +2570,11 @@ function victory() {
     saveScore(finalScore);
     victoryScreen.classList.remove('hidden');
 }
-
 function gameOver() {
     if (gameOverFlag) return;
     gameOverFlag = true;
     gameRunning = false;
-    sound.stopAll();  // Detener todos los sonidos
+    sound.stopAll();
     sound.stopMusic();
     sound.play('defeat');
     const finalScore = totalEnemyKills - totalAllyKills;
@@ -2814,12 +2590,12 @@ function saveScore(score) {
     if (scores.length > 20) scores = scores.slice(0,20);
     localStorage.setItem('buenosMalosScores', JSON.stringify(scores));
 }
-
 function loadScores() {
     const scores = JSON.parse(localStorage.getItem('buenosMalosScores') || '[]');
     scoreList.innerHTML = '';
     if (scores.length === 0) {
-        scoreList.innerHTML = '<li style="text-align:center;color:#aaa;">No hay puntuaciones</li>';
+        const noScoresText = translations.noScores[currentLang] || 'No hay puntuaciones';
+        scoreList.innerHTML = `<li style="text-align:center;color:#aaa;">${noScoresText}</li>`;
     } else {
         for (let s of scores) {
             const li = document.createElement('li');
@@ -2828,40 +2604,52 @@ function loadScores() {
         }
     }
 }
-
 function clearScores() {
     localStorage.removeItem('buenosMalosScores');
     loadScores();
 }
 
 // ============================================================
-//  INICIALIZACIÓN Y BUCLE PRINCIPAL
+//  INICIALIZACIÓN
 // ============================================================
 async function init() {
     await loadImages();
     await sound.loadAll();
 
+    const savedLang = localStorage.getItem('gameLang') || 'es';
+    setLanguage(savedLang);
+
     document.addEventListener('keydown', (e) => {
         keys[e.key] = true;
         if (e.key === ' ' || e.key === 'Space') e.preventDefault();
 
-        // Reclutar grupos
         if (e.key === '1') spawnGroup('guerrero', 10);
         if (e.key === '2') spawnGroup('arquero', 5);
         if (e.key === '3') spawnGroup('maga', 5);
         if (e.key === '4') spawnGroup('jinete', 5);
 
         if (e.key === '5') {
-            if (gameRunning) surrenderConfirm.classList.remove('hidden');
+            if (gameRunning && !gameOverFlag && !victoryScreen.classList.contains('hidden') === false) {
+                if (!surrenderConfirm.classList.contains('hidden')) return;
+                wasPausedBeforeSurrender = paused;
+                surrenderConfirm.classList.remove('hidden');
+                // Pausar sin mostrar mensaje
+                paused = true;
+                document.getElementById('pauseMsg').style.display = 'none';
+            }
         }
         if (e.key === 'p' || e.key === 'P') {
-            if (gameRunning) {
+            if (gameRunning && !gameOverFlag && !victoryScreen.classList.contains('hidden') === false) {
+                if (!surrenderConfirm.classList.contains('hidden')) return;
                 paused = !paused;
                 document.getElementById('pauseMsg').style.display = paused ? 'block' : 'none';
             }
         }
     });
     document.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+    document.getElementById('langEs').addEventListener('click', () => setLanguage('es'));
+    document.getElementById('langEn').addEventListener('click', () => setLanguage('en'));
 
     document.getElementById('playBtn').addEventListener('click', () => {
         sound.play('button');
@@ -2931,6 +2719,8 @@ async function init() {
         sound.stopMusic();
     });
 
+    let wasPausedBeforeSurrender = false;
+
     document.getElementById('surrenderYes').addEventListener('click', () => {
         sound.play('button');
         surrenderConfirm.classList.add('hidden');
@@ -2939,6 +2729,8 @@ async function init() {
     document.getElementById('surrenderNo').addEventListener('click', () => {
         sound.play('button');
         surrenderConfirm.classList.add('hidden');
+        paused = wasPausedBeforeSurrender;
+        document.getElementById('pauseMsg').style.display = paused ? 'block' : 'none';
     });
 
     window.addEventListener('resize', resizeCanvas);
@@ -2950,7 +2742,7 @@ async function init() {
     }
     loop();
 
-    console.log('✅ Juego BUENOS Y MALOS inicializado - 5 niveles');
+    console.log('✅ Juego inicializado');
 }
 
 init();
