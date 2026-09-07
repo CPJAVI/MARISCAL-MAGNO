@@ -1,4 +1,3 @@
-
 // ============================================================
 //  CONFIGURACIÓN Y CONSTANTES
 // ============================================================
@@ -39,7 +38,7 @@ const finalScoreSpan = document.getElementById('finalScore');
 const victoryScoreSpan = document.getElementById('victoryScore');
 
 // ============================================================
-//  SISTEMA DE SONIDOS (fallback si no existen)
+//  SISTEMA DE SONIDOS (con control de sonidos activos)
 // ============================================================
 class SoundManager {
     constructor() {
@@ -47,6 +46,7 @@ class SoundManager {
         this.music = null;
         this.musicPlaying = false;
         this.enabled = true;
+        this.activeSounds = []; // Para detener clones en reproducción
     }
 
     loadSound(name, url) {
@@ -96,9 +96,32 @@ class SoundManager {
             try {
                 const clone = this.sounds[name].cloneNode();
                 clone.volume = 0.5;
+                // Guardar referencia para poder detenerlo después
+                this.activeSounds.push(clone);
                 clone.play().catch(() => {});
+                // Eliminar de la lista cuando termine
+                clone.addEventListener('ended', () => {
+                    const idx = this.activeSounds.indexOf(clone);
+                    if (idx !== -1) this.activeSounds.splice(idx, 1);
+                });
+                // También eliminar si se detiene manualmente
+                clone.addEventListener('pause', () => {
+                    const idx = this.activeSounds.indexOf(clone);
+                    if (idx !== -1) this.activeSounds.splice(idx, 1);
+                });
             } catch (e) {}
         }
+    }
+
+    // Detiene todos los sonidos en reproducción (excepto la música)
+    stopAllSounds() {
+        for (let s of this.activeSounds) {
+            try {
+                s.pause();
+                s.currentTime = 0;
+            } catch (e) {}
+        }
+        this.activeSounds = [];
     }
 
     playMusic() {
@@ -115,6 +138,12 @@ class SoundManager {
             this.music.currentTime = 0;
             this.musicPlaying = false;
         }
+    }
+
+    // Método para detener todo (música + efectos)
+    stopAll() {
+        this.stopAllSounds();
+        this.stopMusic();
     }
 
     async loadAll() {
@@ -2219,12 +2248,17 @@ function fullReset() {
     }
     document.getElementById('diamondValue') && (document.getElementById('diamondValue').textContent = '0');
     updateUI();
+    // Detener todos los sonidos al resetear
+    sound.stopAll();
 }
 
 // ============================================================
 //  FUNCIONES DE NIVEL
 // ============================================================
 function loadLevel(level) {
+    // Detener todos los sonidos antes de cambiar de nivel
+    sound.stopAll();
+
     currentLevel = level;
     levelEnemyKills = 0;
     levelAllyKills = 0;
@@ -2751,6 +2785,7 @@ function victory() {
     if (gameOverFlag) return;
     gameOverFlag = true;
     gameRunning = false;
+    sound.stopAll();  // Detener todos los sonidos
     sound.stopMusic();
     sound.play('victory');
     const finalScore = totalEnemyKills - totalAllyKills;
@@ -2763,6 +2798,7 @@ function gameOver() {
     if (gameOverFlag) return;
     gameOverFlag = true;
     gameRunning = false;
+    sound.stopAll();  // Detener todos los sonidos
     sound.stopMusic();
     sound.play('defeat');
     const finalScore = totalEnemyKills - totalAllyKills;
@@ -2918,4 +2954,3 @@ async function init() {
 }
 
 init();
- 
