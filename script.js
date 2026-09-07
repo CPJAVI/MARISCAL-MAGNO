@@ -345,7 +345,7 @@ class Projectile {
         this.speed = speed;
         this.active = true;
         this.radius = tipo === 'fire' ? 16 : (tipo === 'heal' ? 12 : 8);
-        this.healAmount = healAmount; // para proyectiles curativos
+        this.healAmount = healAmount;
         const dx = target.x + target.w/2 - x;
         const dy = target.y + target.h/2 - y;
         const dist = Math.hypot(dx, dy);
@@ -384,9 +384,7 @@ class Projectile {
             }
         }
 
-        // Comportamiento según tipo
         if (this.tipo === 'heal') {
-            // Buscar aliados heridos para curar
             for (let e of entities) {
                 if (!e.isAlive()) continue;
                 if (this.owner === 'ally' && (e.type === 'marshal' || e.type === 'guerrero' || e.type === 'arquero' || e.type === 'maga' || e.type === 'jinete' || e.type === 'medico')) {
@@ -400,7 +398,6 @@ class Projectile {
                 }
             }
         } else {
-            // Proyectiles de daño
             for (let e of entities) {
                 if (!e.isAlive()) continue;
                 const isTarget = (this.owner === 'ally' && (e.type === 'esqueleto' || e.type === 'esqueleto_arquero' || e.type === 'guerrero_oscuridad' || e.type === 'hechicera' || e.type === 'jefe' || e.type === 'cañon_enemigo' || e.type === 'dinosaurio')) ||
@@ -493,7 +490,6 @@ class Projectile {
             }
             ctx.shadowBlur = 0;
         } else if (this.tipo === 'heal') {
-            // Bola verde curativa
             const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius);
             grad.addColorStop(0, '#FFFFFF');
             grad.addColorStop(0.2, '#90EE90');
@@ -506,7 +502,6 @@ class Projectile {
             ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
-            // Destello
             ctx.fillStyle = 'rgba(255,255,255,0.3)';
             ctx.beginPath();
             ctx.arc(-4, -4, 4, 0, Math.PI*2);
@@ -594,7 +589,7 @@ class CanonBall {
 }
 
 // ============================================================
-//  CLASE BASE: ENTIDAD (con método heal)
+//  CLASE BASE: ENTIDAD
 // ============================================================
 class Entity {
     constructor(x, y, type, maxHP, speed) {
@@ -639,8 +634,6 @@ class Entity {
     heal(amount) {
         this.hp = Math.min(this.hp + amount, this.maxHP);
         if (this.hp < 0) this.hp = 0;
-        // Reproducir sonido de curación (opcional)
-        // sound.play('health');
     }
 
     isAlive() { return this.active && this.hp > 0; }
@@ -1109,7 +1102,7 @@ class Jinete extends Entity {
         this.attackDamage = 35;
         this.range = 40;
         this.attackInterval = 20;
-        this.w = 45; this.h = 60; // 1.5x tamaño normal
+        this.w = 45; this.h = 60;
         this.goalX = goalX;
     }
     draw(ctx, images) {
@@ -1211,11 +1204,11 @@ class Jinete extends Entity {
 }
 
 // ============================================================
-//  NUEVA UNIDAD: MÉDICO (ALIADO)
+//  MÉDICO (ALIADO) - PRIORIZA HUIR, ATACA SOLO SI NO PUEDE HUIR
 // ============================================================
 class Medico extends Entity {
     constructor(x, y, goalX = null) {
-        super(x, y, 'medico', 80, 1.2);
+        super(x, y, 'medico', 80, 1.8);
         this.attackDamage = 10;
         this.range = 35;
         this.attackInterval = 30;
@@ -1225,6 +1218,7 @@ class Medico extends Entity {
         this.healRange = 200;
         this.healAmount = 30;
         this.healInterval = 60;
+        this.fearRange = 150; // distancia de seguridad
     }
     draw(ctx, images) {
         if (!this.isAlive()) return;
@@ -1243,8 +1237,9 @@ class Medico extends Entity {
     }
     update(aliados, enemigos, proyectiles, cañones) {
         super.update();
+
+        // ---- Curación ----
         if (this.healCooldown > 0) this.healCooldown--;
-        // Encontrar aliado herido más cercano para curar
         let healTarget = null;
         let minDist = Infinity;
         for (let a of aliados) {
@@ -1257,7 +1252,6 @@ class Medico extends Entity {
                 }
             }
         }
-        // También curar al mariscal si está en rango y herido
         if (marshal && marshal.isAlive() && marshal.hp < marshal.maxHP) {
             const d = distancia(this, marshal);
             if (d < this.healRange && d < minDist) {
@@ -1279,11 +1273,43 @@ class Medico extends Entity {
             );
             proyectiles.push(p);
             this.healCooldown = this.healInterval;
-            // No reproducimos sonido para no saturar
         }
 
-        // Comportamiento de ataque cuerpo a cuerpo (contra enemigos cercanos)
+        // ---- Detectar enemigo cercano ----
+        let enemyNear = null;
+        let minEnemyDist = Infinity;
+        for (let e of enemigos) {
+            if (!e.isAlive()) continue;
+            const d = distancia(this, e);
+            if (d < minEnemyDist && d < this.fearRange) {
+                minEnemyDist = d;
+                enemyNear = e;
+            }
+        }
+
+        // ---- SI HAY ENEMIGO CERCA: HUIR ----
+        if (enemyNear) {
+            const dx = this.x - enemyNear.x;
+            const dy = this.y - enemyNear.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 1) {
+                this.vx = (dx / dist) * this.speed;
+                this.vy = (dy / dist) * this.speed;
+                if (this.vx > 0) this.direction = 1;
+                else if (this.vx < 0) this.direction = -1;
+            } else {
+                this.vx = 0;
+                this.vy = 0;
+            }
+            // No atacar mientras huye
+            return;
+        }
+
+        // ---- SI NO HAY ENEMIGO CERCA: COMPORTAMIENTO NORMAL ----
+        // (incluye ataque a enemigos cercanos y avance hacia goalX)
+
         if (this.goalX !== null) {
+            // Buscar cañones bloqueando
             let blockingCanon = null;
             let minDistC = Infinity;
             for (let c of cañones) {
@@ -1312,14 +1338,15 @@ class Medico extends Entity {
                 }
                 return;
             }
+
             let target = null;
-            let minEnemyDist = Infinity;
+            let minEnemyDist2 = Infinity;
             for (let e of enemigos) {
                 if (!e.isAlive()) continue;
                 if (Math.abs(e.y - this.y) < 30 && e.x > this.x && e.x < this.goalX) {
                     const d = distancia(this, e);
-                    if (d < minEnemyDist && d < 200) {
-                        minEnemyDist = d;
+                    if (d < minEnemyDist2 && d < 200) {
+                        minEnemyDist2 = d;
                         target = e;
                     }
                 }
@@ -1353,6 +1380,7 @@ class Medico extends Entity {
                 this.direction = 1;
             }
         } else {
+            // Comportamiento normal sin goalX
             let closest = null, minDist = Infinity;
             for (let e of enemigos) { if (!e.isAlive()) continue; const d = distancia(this, e); if (d < minDist) { minDist = d; closest = e; } }
             if (closest) {
@@ -1370,12 +1398,12 @@ class Medico extends Entity {
 class Marshal extends Entity {
     constructor(x, y) {
         super(x, y, 'marshal', 2000, 3);
-        this.w = 60; this.h = 80; // 2x tamaño normal
+        this.w = 60; this.h = 80;
         this.attackDamage = 30;
         this.shotDamage = 30;
         this.shootCooldown = 0;
         this.shootAnim = 0;
-        this.range = 60; // Ajustar rango de ataque según tamaño
+        this.range = 60;
     }
 
     update(keys) {
@@ -1426,7 +1454,7 @@ class Marshal extends Entity {
                 this.attackAnim = 10;
                 for (let e of enemigos) {
                     if (!e.isAlive()) continue;
-                    if (distancia(this, e) < 80) { // rango aumentado
+                    if (distancia(this, e) < 80) {
                         e.takeDamage(this.attackDamage);
                         sound.play('attack');
                     }
@@ -2190,11 +2218,9 @@ class Dinosaurio extends Entity {
             this.x = Math.max(this.x, W() * 0.5);
         }
 
-        // Comportamiento similar a jinete aliado pero hacia la izquierda
         let target = null;
         let minDist = Infinity;
         if (this.goalX !== null) {
-            // Modo rush hacia la base aliada
             for (let a of allTargets) {
                 if (!a.isAlive()) continue;
                 const d = distancia(this, a);
@@ -2220,7 +2246,6 @@ class Dinosaurio extends Entity {
                     }
                 }
             } else {
-                // Moverse hacia la izquierda (goalX)
                 const dx = this.goalX - this.x;
                 const dist = Math.abs(dx);
                 if (dist > 5) {
@@ -2230,10 +2255,9 @@ class Dinosaurio extends Entity {
                     this.vx *= 0.9;
                     this.vy = 0;
                 }
-                this.direction = -1; // siempre hacia la izquierda
+                this.direction = -1;
             }
         } else {
-            // Comportamiento normal: buscar enemigos (aliados) más cercanos
             for (let a of allTargets) {
                 if (!a.isAlive()) continue;
                 const d = distancia(this, a);
@@ -2271,9 +2295,9 @@ class JefeFinal extends Entity {
     constructor(x, y) {
         super(x, y, 'jefe', 100000, 1.5);
         this.attackDamage = 120;
-        this.range = 100; // rango aumentado por tamaño
+        this.range = 100;
         this.attackInterval = 25;
-        this.w = 180; this.h = 240; // 3x el tamaño del mariscal (60x80)
+        this.w = 180; this.h = 240;
         this.rushMode = false;
         this.fireballCooldown = 0;
         this.fireballInterval = 40;
@@ -2533,8 +2557,8 @@ let levelAllyKills = 0;
 let availableUnits = {
     guerrero: 4000,
     arquero: 300,
-    maga: 80,
-    jinete: 100,
+    maga: 100,
+    jinete: 150,
     medico: 30
 };
 
@@ -2834,7 +2858,7 @@ function generateGroup(level) {
 }
 
 // ============================================================
-//  NUEVA FUNCIÓN: RECLUTAR GRUPOS (incluye médicos)
+//  RECLUTAR GRUPOS
 // ============================================================
 function spawnGroup(type, count) {
     if (!gameRunning || paused || gameOverFlag) return;
