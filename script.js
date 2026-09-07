@@ -40,27 +40,33 @@ const victoryScoreSpan = document.getElementById('victoryScore');
 //  SISTEMA DE TRADUCCIONES
 // ============================================================
 const translations = {
-    title: { es: '🔱 MARISCAL MAGNO 🔱', en: '🔱 GREAT MARSHAL 🔱' },
-    subtitle: { es: '¡5 niveles de acción!', en: '5 action levels!' },
+    title: {
+        es: '🔱 MARISCAL MAGNO 🔱',
+        en: '🔱 GREAT MARSHAL 🔱'
+    },
+    subtitle: {
+        es: '¡5 niveles de acción!',
+        en: '5 action levels!'
+    },
     playBtn: { es: '▶ JUGAR', en: '▶ PLAY' },
     instructionsBtn: { es: '📖 INSTRUCCIONES', en: '📖 INSTRUCTIONS' },
     scoresBtn: { es: '🏆 HISTORIAL', en: '🏆 SCORES' },
     controls: {
-        es: 'Flechas mover | J ataque | K escudo | L disparo | 1-4 unidades (grupos) | 5 rendirse | P pausa',
-        en: 'Arrows move | J attack | K shield | L shoot | 1-4 units (groups) | 5 surrender | P pause'
+        es: 'Flechas mover | J ataque | K escudo | L disparo | 1-4 (grupos) | 5 Médicos | 6 rendirse | P pausa',
+        en: 'Arrows move | J attack | K shield | L shoot | 1-4 (groups) | 5 Healers | 6 surrender | P pause'
     },
     instructionsTitle: { es: '📖 INSTRUCCIONES', en: '📖 INSTRUCTIONS' },
     instructionsText: {
         es: `<p><strong>Mariscal:</strong> Flechas mover, J ataque (espada), K escudo, L disparo (proyectil).</p>
-             <p><strong>Reclutar grupos:</strong> 1 → 10 Guerreros, 2 → 5 Arqueros, 3 → 5 Magas, 4 → 5 Jinetes.</p>
+             <p><strong>Reclutar grupos:</strong> 1 → 10 Guerreros, 2 → 5 Arqueros, 3 → 5 Magas, 4 → 5 Jinetes, 5 → 3 Médicos.</p>
              <p><strong>Niveles:</strong> N1: Aniquilar enemigos. N2: Más bajas en 2 min (oleadas rápidas). N3: Defender base 2 min (máx 40 aliados, 80 enemigos). N4: Infiltrar soldado en base enemiga (máx 80 aliados, 40 enemigos, oleadas rápidas, muro infranqueable, defensores no pasan de la mitad). N5: Derrotar al JEFE (100.000 PS, dispara bolas de fuego, máx 20 aliados).</p>
              <p><strong>Puntuación:</strong> bajas_enemigas - bajas_propias. ¡Historial guardado!</p>
-             <p><strong>Teclas:</strong> 5 rendirse (confirmar), P pausar.</p>`,
+             <p><strong>Teclas:</strong> 6 rendirse (confirmar), P pausar.</p>`,
         en: `<p><strong>Marshal:</strong> Arrows move, J attack (sword), K shield, L shoot (projectile).</p>
-             <p><strong>Recruit groups:</strong> 1 → 10 Warriors, 2 → 5 Archers, 3 → 5 Mages, 4 → 5 Riders.</p>
+             <p><strong>Recruit groups:</strong> 1 → 10 Warriors, 2 → 5 Archers, 3 → 5 Mages, 4 → 5 Riders, 5 → 3 Healers.</p>
              <p><strong>Levels:</strong> L1: Annihilate enemies. L2: More kills in 2 min (fast waves). L3: Defend base 2 min (max 40 allies, 80 enemies). L4: Infiltrate soldier into enemy base (max 80 allies, 40 enemies, fast waves, impassable wall, defenders stay on their half). L5: Defeat the BOSS (100,000 HP, fires fireballs, max 20 allies).</p>
              <p><strong>Score:</strong> enemy_kills - ally_kills. History saved!</p>
-             <p><strong>Keys:</strong> 5 surrender (confirm), P pause.</p>`
+             <p><strong>Keys:</strong> 6 surrender (confirm), P pause.</p>`
     },
     backFromInstructions: { es: '⬅ VOLVER', en: '⬅ BACK' },
     scoresTitle: { es: '🏆 HISTORIAL', en: '🏆 SCORES' },
@@ -89,10 +95,11 @@ const translations = {
     }
 };
 
+// Idioma actual
 let currentLang = 'es';
 
 // ============================================================
-//  SISTEMA DE SONIDOS
+//  SISTEMA DE SONIDOS (con control de sonidos activos)
 // ============================================================
 class SoundManager {
     constructor() {
@@ -102,20 +109,34 @@ class SoundManager {
         this.enabled = true;
         this.activeSounds = [];
     }
+
     loadSound(name, url) {
         return new Promise((resolve) => {
             try {
                 const audio = new Audio(url);
                 audio.preload = 'auto';
-                audio.oncanplaythrough = () => { this.sounds[name] = audio; resolve(); };
-                audio.onerror = () => { this.sounds[name] = new Audio(); resolve(); };
+                audio.oncanplaythrough = () => {
+                    this.sounds[name] = audio;
+                    resolve();
+                };
+                audio.onerror = () => {
+                    this.sounds[name] = new Audio();
+                    resolve();
+                };
                 audio.load();
                 setTimeout(() => {
-                    if (!this.sounds[name]) { this.sounds[name] = new Audio(); resolve(); }
+                    if (!this.sounds[name]) {
+                        this.sounds[name] = new Audio();
+                        resolve();
+                    }
                 }, 2000);
-            } catch (e) { this.sounds[name] = new Audio(); resolve(); }
+            } catch (e) {
+                this.sounds[name] = new Audio();
+                resolve();
+            }
         });
     }
+
     loadMusic(url) {
         return new Promise((resolve) => {
             try {
@@ -129,6 +150,7 @@ class SoundManager {
             } catch (e) { this.music = null; resolve(); }
         });
     }
+
     play(name) {
         if (!this.enabled) return;
         if (this.sounds[name]) {
@@ -148,12 +170,17 @@ class SoundManager {
             } catch (e) {}
         }
     }
+
     stopAllSounds() {
         for (let s of this.activeSounds) {
-            try { s.pause(); s.currentTime = 0; } catch (e) {}
+            try {
+                s.pause();
+                s.currentTime = 0;
+            } catch (e) {}
         }
         this.activeSounds = [];
     }
+
     playMusic() {
         if (!this.enabled || !this.music) return;
         if (!this.musicPlaying) {
@@ -161,6 +188,7 @@ class SoundManager {
             this.musicPlaying = true;
         }
     }
+
     stopMusic() {
         if (this.music) {
             this.music.pause();
@@ -168,10 +196,12 @@ class SoundManager {
             this.musicPlaying = false;
         }
     }
+
     stopAll() {
         this.stopAllSounds();
         this.stopMusic();
     }
+
     async loadAll() {
         const files = {
             'button': 'audio/button.m4a',
@@ -188,15 +218,17 @@ class SoundManager {
             await this.loadSound(name, url);
         }
         await this.loadMusic('audio/music.m4a');
-        console.log('✅ Sonidos cargados');
+        console.log('✅ Sonidos cargados (fallback si no existen)');
     }
 }
+
 const sound = new SoundManager();
 
 // ============================================================
-//  SISTEMA DE IMÁGENES
+//  SISTEMA DE IMÁGENES (fallback con formas)
 // ============================================================
 const images = {};
+
 function loadImages() {
     const list = {
         'mariscal': 'images/mariscal.png',
@@ -218,6 +250,12 @@ function loadImages() {
         'jinete': 'images/jinete.png',
         'jinete_attack': 'images/jinete.png',
         'jinete_shield': 'images/jinete.png',
+        'medico': 'images/medico.png',
+        'medico_attack': 'images/medico.png',
+        'medico_shield': 'images/medico.png',
+        'dinosaurio': 'images/dinosaurio.png',
+        'dinosaurio_attack': 'images/dinosaurio.png',
+        'dinosaurio_shield': 'images/dinosaurio.png',
         'cañon': 'images/canon.png',
         'esqueleto': 'images/esqueleto.png',
         'esqueleto_attack': 'images/esqueleto.png',
@@ -263,6 +301,7 @@ function setLanguage(lang) {
     });
     updateUIStrings();
 }
+
 function updateUIStrings() {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.dataset.i18n;
@@ -286,63 +325,107 @@ function updateUIStrings() {
 // ============================================================
 //  UTILIDADES
 // ============================================================
-function distancia(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function distancia(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
+}
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function random(min, max) { return Math.random() * (max - min) + min; }
 
 // ============================================================
-//  CLASE PROYECTIL
+//  CLASE PROYECTIL (para flechas, fuego y curación)
 // ============================================================
 class Projectile {
-    constructor(x, y, target, tipo, damage, owner, speed = 5, color = null) {
-        this.x = x; this.y = y; this.target = target; this.tipo = tipo;
-        this.damage = damage; this.owner = owner; this.speed = speed;
+    constructor(x, y, target, tipo, damage, owner, speed = 5, color = null, healAmount = 0) {
+        this.x = x;
+        this.y = y;
+        this.target = target;
+        this.tipo = tipo; // 'arrow', 'fire', 'heal'
+        this.damage = damage;
+        this.owner = owner; // 'ally' o 'enemy'
+        this.speed = speed;
         this.active = true;
-        this.radius = tipo === 'fire' ? 16 : 8;
+        this.radius = tipo === 'fire' ? 16 : (tipo === 'heal' ? 12 : 8);
+        this.healAmount = healAmount; // para proyectiles curativos
         const dx = target.x + target.w/2 - x;
         const dy = target.y + target.h/2 - y;
         const dist = Math.hypot(dx, dy);
-        if (dist > 0) { this.vx = (dx / dist) * speed; this.vy = (dy / dist) * speed; }
-        else { this.vx = 0; this.vy = -speed; }
+        if (dist > 0) {
+            this.vx = (dx / dist) * speed;
+            this.vy = (dy / dist) * speed;
+        } else {
+            this.vx = 0;
+            this.vy = -speed;
+        }
         this.angle = Math.atan2(this.vy, this.vx);
         this.trail = [];
         this.customColor = color || null;
     }
+
     update(entities) {
         if (!this.active) return;
         this.trail.push({x: this.x, y: this.y});
         if (this.trail.length > 15) this.trail.shift();
+
         this.x += this.vx;
         this.y += this.vy;
+
         if (this.x < -50 || this.x > W() + 50 || this.y < -50 || this.y > H() + 50) {
-            this.active = false; return;
+            this.active = false;
+            return;
         }
-        if (currentLevel === 4) {
+
+        // Colisión con muros (nivel 4) solo para proyectiles de daño (no curativos)
+        if (currentLevel === 4 && this.tipo !== 'heal') {
             for (let wall of walls) {
                 if (this.x > wall.x && this.x < wall.x + wall.w && this.y > wall.y && this.y < wall.y + wall.h) {
-                    this.active = false; return;
+                    this.active = false;
+                    return;
                 }
             }
         }
-        for (let e of entities) {
-            if (!e.isAlive()) continue;
-            const isTarget = (this.owner === 'ally' && (e.type === 'esqueleto' || e.type === 'esqueleto_arquero' || e.type === 'guerrero_oscuridad' || e.type === 'hechicera' || e.type === 'jefe' || e.type === 'cañon_enemigo')) ||
-                             (this.owner === 'enemy' && (e.type === 'marshal' || e.type === 'guerrero' || e.type === 'arquero' || e.type === 'maga' || e.type === 'jinete' || e.type === 'cañon_amigo'));
-            if (!isTarget) continue;
-            if (distancia(this, {x: e.x + e.w/2, y: e.y + e.h/2}) < this.radius + Math.max(e.w, e.h)/2) {
-                e.takeDamage(this.damage);
-                this.active = false;
-                break;
+
+        // Comportamiento según tipo
+        if (this.tipo === 'heal') {
+            // Buscar aliados heridos para curar
+            for (let e of entities) {
+                if (!e.isAlive()) continue;
+                if (this.owner === 'ally' && (e.type === 'marshal' || e.type === 'guerrero' || e.type === 'arquero' || e.type === 'maga' || e.type === 'jinete' || e.type === 'medico')) {
+                    if (distancia(this, {x: e.x + e.w/2, y: e.y + e.h/2}) < this.radius + Math.max(e.w, e.h)/2) {
+                        if (e.hp < e.maxHP) {
+                            e.heal(this.healAmount);
+                            this.active = false;
+                            break;
+                        }
+                    }
+                }
+            }
+        } else {
+            // Proyectiles de daño
+            for (let e of entities) {
+                if (!e.isAlive()) continue;
+                const isTarget = (this.owner === 'ally' && (e.type === 'esqueleto' || e.type === 'esqueleto_arquero' || e.type === 'guerrero_oscuridad' || e.type === 'hechicera' || e.type === 'jefe' || e.type === 'cañon_enemigo' || e.type === 'dinosaurio')) ||
+                                 (this.owner === 'enemy' && (e.type === 'marshal' || e.type === 'guerrero' || e.type === 'arquero' || e.type === 'maga' || e.type === 'jinete' || e.type === 'medico' || e.type === 'cañon_amigo'));
+                if (!isTarget) continue;
+
+                if (distancia(this, {x: e.x + e.w/2, y: e.y + e.h/2}) < this.radius + Math.max(e.w, e.h)/2) {
+                    e.takeDamage(this.damage);
+                    this.active = false;
+                    break;
+                }
             }
         }
     }
+
     draw(ctx) {
         if (!this.active) return;
         ctx.save();
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
+
         if (this.tipo === 'arrow') {
-            const len = 24, headLen = 8, headWidth = 6;
+            const len = 24;
+            const headLen = 8;
+            const headWidth = 6;
             ctx.fillStyle = '#8B4513';
             ctx.strokeStyle = '#4a2c0a';
             ctx.lineWidth = 2;
@@ -409,39 +492,73 @@ class Projectile {
                 ctx.fill();
             }
             ctx.shadowBlur = 0;
+        } else if (this.tipo === 'heal') {
+            // Bola verde curativa
+            const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius);
+            grad.addColorStop(0, '#FFFFFF');
+            grad.addColorStop(0.2, '#90EE90');
+            grad.addColorStop(0.7, '#228B22');
+            grad.addColorStop(1, '#006400');
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00FF00';
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            // Destello
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.beginPath();
+            ctx.arc(-4, -4, 4, 0, Math.PI*2);
+            ctx.fill();
         }
         ctx.restore();
     }
 }
 
 // ============================================================
-//  CLASE PROYECTIL DE CAÑÓN
+//  CLASE PROYECTIL DE CAÑÓN (punto negro)
 // ============================================================
 class CanonBall {
     constructor(x, y, direction, isEnemy = false) {
-        this.x = x; this.y = y; this.radius = 10;
-        this.speed = 6 * direction; this.direction = direction;
-        this.active = true; this.damage = 50;
-        this.trail = []; this.isEnemy = isEnemy;
+        this.x = x;
+        this.y = y;
+        this.radius = 10;
+        this.speed = 6 * direction;
+        this.direction = direction;
+        this.active = true;
+        this.damage = 50;
+        this.trail = [];
+        this.isEnemy = isEnemy;
     }
+
     update(entities) {
         if (!this.active) return;
         this.trail.push({x: this.x, y: this.y});
         if (this.trail.length > 10) this.trail.shift();
+
         this.x += this.speed;
-        if (this.x < -50 || this.x > W() + 50) { this.active = false; return; }
+
+        if (this.x < -50 || this.x > W() + 50) {
+            this.active = false;
+            return;
+        }
+
         if (currentLevel === 4) {
             for (let wall of walls) {
                 if (this.x > wall.x && this.x < wall.x + wall.w && this.y > wall.y && this.y < wall.y + wall.h) {
-                    this.active = false; return;
+                    this.active = false;
+                    return;
                 }
             }
         }
+
         for (let e of entities) {
             if (!e.isAlive()) continue;
-            const isTarget = (this.isEnemy && (e.type === 'marshal' || e.type === 'guerrero' || e.type === 'arquero' || e.type === 'maga' || e.type === 'jinete')) ||
-                             (!this.isEnemy && (e.type === 'esqueleto' || e.type === 'esqueleto_arquero' || e.type === 'guerrero_oscuridad' || e.type === 'hechicera' || e.type === 'jefe'));
+            const isTarget = (this.isEnemy && (e.type === 'marshal' || e.type === 'guerrero' || e.type === 'arquero' || e.type === 'maga' || e.type === 'jinete' || e.type === 'medico')) ||
+                             (!this.isEnemy && (e.type === 'esqueleto' || e.type === 'esqueleto_arquero' || e.type === 'guerrero_oscuridad' || e.type === 'hechicera' || e.type === 'jefe' || e.type === 'dinosaurio'));
             if (!isTarget) continue;
+
             const dist = distancia(this, {x: e.x + e.w/2, y: e.y + e.h/2});
             if (dist < this.radius + Math.max(e.w, e.h)/2) {
                 e.takeDamage(this.damage);
@@ -450,6 +567,7 @@ class CanonBall {
             }
         }
     }
+
     draw(ctx) {
         if (!this.active) return;
         for (let i = 0; i < this.trail.length; i++) {
@@ -476,14 +594,18 @@ class CanonBall {
 }
 
 // ============================================================
-//  CLASE BASE ENTIDAD
+//  CLASE BASE: ENTIDAD (con método heal)
 // ============================================================
 class Entity {
     constructor(x, y, type, maxHP, speed) {
-        this.x = x; this.y = y; this.type = type;
-        this.maxHP = maxHP; this.hp = maxHP;
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.maxHP = maxHP;
+        this.hp = maxHP;
         this.speed = speed;
-        this.vx = 0; this.vy = 0;
+        this.vx = 0;
+        this.vy = 0;
         this.direction = 1;
         this.active = true;
         this.attackCooldown = 0;
@@ -495,9 +617,11 @@ class Entity {
         this.attackInterval = 30;
         this.attackAnim = 0;
         this.shootAnim = 0;
-        this.w = 30; this.h = 40;
+        this.w = 30;
+        this.h = 40;
         this.target = null;
-        this.rangeMin = 0; this.rangeMax = 0;
+        this.rangeMin = 0;
+        this.rangeMax = 0;
         this.projectileSpeed = 5;
         this.projectileDamage = 0;
         this.projectileType = 'arrow';
@@ -505,12 +629,22 @@ class Entity {
         this.goalX = null;
         this.isEnemy = false;
     }
+
     takeDamage(dmg) {
         if (this.shieldActive) dmg = Math.floor(dmg * 0.3);
         this.hp -= dmg;
         if (this.hp <= 0) { this.hp = 0; this.active = false; }
     }
+
+    heal(amount) {
+        this.hp = Math.min(this.hp + amount, this.maxHP);
+        if (this.hp < 0) this.hp = 0;
+        // Reproducir sonido de curación (opcional)
+        // sound.play('health');
+    }
+
     isAlive() { return this.active && this.hp > 0; }
+
     checkWallCollision() {
         if (currentLevel !== 4) return;
         for (let wall of walls) {
@@ -528,8 +662,10 @@ class Entity {
             }
         }
     }
+
     move() {
-        this.x += this.vx; this.y += this.vy;
+        this.x += this.vx;
+        this.y += this.vy;
         const groundY = H() * 0.3;
         this.y = clamp(this.y, groundY, H() - 20);
         this.x = clamp(this.x, 0, W());
@@ -537,6 +673,7 @@ class Entity {
         else if (this.vx < 0) this.direction = -1;
         this.checkWallCollision();
     }
+
     update() {
         if (this.attackCooldown > 0) this.attackCooldown--;
         if (this.shieldTimer > 0) { this.shieldTimer--; this.shieldActive = true; } else { this.shieldActive = false; }
@@ -544,7 +681,8 @@ class Entity {
         if (this.shootAnim > 0) this.shootAnim--;
         this.move();
     }
-    draw(ctx, images) {}
+
+    draw(ctx, images) { /* sobrescrito */ }
 }
 
 // ============================================================
@@ -704,7 +842,15 @@ class Arquero extends Entity {
             }
             if (blockingCanon && minDist < this.rangeMax) {
                 if (this.attackCooldown <= 0) {
-                    const p = new Projectile(this.x + this.w/2, this.y + this.h/2, blockingCanon, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
+                    const p = new Projectile(
+                        this.x + this.w/2,
+                        this.y + this.h/2,
+                        blockingCanon,
+                        this.projectileType,
+                        this.projectileDamage,
+                        'ally',
+                        this.projectileSpeed
+                    );
                     proyectiles.push(p);
                     this.attackCooldown = this.attackInterval;
                     this.shooting = true;
@@ -738,7 +884,15 @@ class Arquero extends Entity {
                 } else {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
+                        const p = new Projectile(
+                            this.x + this.w/2,
+                            this.y + this.h/2,
+                            target,
+                            this.projectileType,
+                            this.projectileDamage,
+                            'ally',
+                            this.projectileSpeed
+                        );
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.shooting = true;
@@ -771,7 +925,15 @@ class Arquero extends Entity {
                 } else {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, closest, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
+                        const p = new Projectile(
+                            this.x + this.w/2,
+                            this.y + this.h/2,
+                            closest,
+                            this.projectileType,
+                            this.projectileDamage,
+                            'ally',
+                            this.projectileSpeed
+                        );
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.shooting = true;
@@ -838,7 +1000,15 @@ class Maga extends Entity {
             }
             if (blockingCanon && minDist < this.rangeMax) {
                 if (this.attackCooldown <= 0) {
-                    const p = new Projectile(this.x + this.w/2, this.y + this.h/2, blockingCanon, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
+                    const p = new Projectile(
+                        this.x + this.w/2,
+                        this.y + this.h/2,
+                        blockingCanon,
+                        this.projectileType,
+                        this.projectileDamage,
+                        'ally',
+                        this.projectileSpeed
+                    );
                     proyectiles.push(p);
                     this.attackCooldown = this.attackInterval;
                     this.launchAnim = 10;
@@ -872,7 +1042,15 @@ class Maga extends Entity {
                 } else {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
+                        const p = new Projectile(
+                            this.x + this.w/2,
+                            this.y + this.h/2,
+                            target,
+                            this.projectileType,
+                            this.projectileDamage,
+                            'ally',
+                            this.projectileSpeed
+                        );
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.launchAnim = 10;
@@ -905,7 +1083,15 @@ class Maga extends Entity {
                 } else {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, closest, this.projectileType, this.projectileDamage, 'ally', this.projectileSpeed);
+                        const p = new Projectile(
+                            this.x + this.w/2,
+                            this.y + this.h/2,
+                            closest,
+                            this.projectileType,
+                            this.projectileDamage,
+                            'ally',
+                            this.projectileSpeed
+                        );
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.launchAnim = 10;
@@ -919,11 +1105,11 @@ class Maga extends Entity {
 
 class Jinete extends Entity {
     constructor(x, y, goalX = null) {
-        super(x, y, 'jinete', 300, 1.2);
+        super(x, y, 'jinete', 500, 2.5);
         this.attackDamage = 35;
         this.range = 40;
         this.attackInterval = 20;
-        this.w = 35; this.h = 45;
+        this.w = 45; this.h = 60; // 1.5x tamaño normal
         this.goalX = goalX;
     }
     draw(ctx, images) {
@@ -1025,17 +1211,173 @@ class Jinete extends Entity {
 }
 
 // ============================================================
-//  MARISCAL
+//  NUEVA UNIDAD: MÉDICO (ALIADO)
+// ============================================================
+class Medico extends Entity {
+    constructor(x, y, goalX = null) {
+        super(x, y, 'medico', 80, 1.2);
+        this.attackDamage = 10;
+        this.range = 35;
+        this.attackInterval = 30;
+        this.w = 30; this.h = 40;
+        this.goalX = goalX;
+        this.healCooldown = 0;
+        this.healRange = 200;
+        this.healAmount = 30;
+        this.healInterval = 60;
+    }
+    draw(ctx, images) {
+        if (!this.isAlive()) return;
+        let img = this.shieldActive ? images.medico_shield : (this.attackAnim > 0 ? images.medico_attack : images.medico);
+        if (img && img.complete && img.naturalWidth > 0) {
+            ctx.save();
+            if (this.direction === -1) { ctx.translate(this.x + this.w, this.y); ctx.scale(-1,1); } else ctx.translate(this.x, this.y);
+            ctx.drawImage(img, 0, 0, this.w, this.h);
+            ctx.restore();
+        } else {
+            ctx.fillStyle = '#00BCD4'; ctx.fillRect(this.x, this.y, this.w, this.h);
+            ctx.fillStyle = '#fff'; ctx.font = '10px Arial'; ctx.fillText('H', this.x+8, this.y+20);
+        }
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(this.x, this.y-8, this.w, 5);
+        ctx.fillStyle = '#2ecc71'; ctx.fillRect(this.x+2, this.y-6, (this.w-4)*(this.hp/this.maxHP), 3);
+    }
+    update(aliados, enemigos, proyectiles, cañones) {
+        super.update();
+        if (this.healCooldown > 0) this.healCooldown--;
+        // Encontrar aliado herido más cercano para curar
+        let healTarget = null;
+        let minDist = Infinity;
+        for (let a of aliados) {
+            if (!a.isAlive() || a === this) continue;
+            if (a.hp < a.maxHP) {
+                const d = distancia(this, a);
+                if (d < minDist && d < this.healRange) {
+                    minDist = d;
+                    healTarget = a;
+                }
+            }
+        }
+        // También curar al mariscal si está en rango y herido
+        if (marshal && marshal.isAlive() && marshal.hp < marshal.maxHP) {
+            const d = distancia(this, marshal);
+            if (d < this.healRange && d < minDist) {
+                minDist = d;
+                healTarget = marshal;
+            }
+        }
+        if (healTarget && this.healCooldown <= 0) {
+            const p = new Projectile(
+                this.x + this.w/2,
+                this.y + this.h/2,
+                healTarget,
+                'heal',
+                0,
+                'ally',
+                4,
+                null,
+                this.healAmount
+            );
+            proyectiles.push(p);
+            this.healCooldown = this.healInterval;
+            // No reproducimos sonido para no saturar
+        }
+
+        // Comportamiento de ataque cuerpo a cuerpo (contra enemigos cercanos)
+        if (this.goalX !== null) {
+            let blockingCanon = null;
+            let minDistC = Infinity;
+            for (let c of cañones) {
+                if (!c.active || !c.isEnemy) continue;
+                if (Math.abs(c.y - this.y) < 20 && c.x > this.x && c.x < this.goalX) {
+                    const d = c.x - this.x;
+                    if (d < minDistC) { minDistC = d; blockingCanon = c; }
+                }
+            }
+            if (blockingCanon) {
+                const dx = blockingCanon.x - this.x;
+                const dy = blockingCanon.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > this.range) {
+                    this.vx = (dx/dist)*this.speed;
+                    this.vy = (dy/dist)*this.speed;
+                } else {
+                    this.vx = 0; this.vy = 0;
+                    if (this.attackCooldown <= 0) {
+                        blockingCanon.hp -= this.attackDamage;
+                        if (blockingCanon.hp <= 0) blockingCanon.active = false;
+                        this.attackCooldown = this.attackInterval;
+                        this.attackAnim = 10;
+                        sound.play('attack');
+                    }
+                }
+                return;
+            }
+            let target = null;
+            let minEnemyDist = Infinity;
+            for (let e of enemigos) {
+                if (!e.isAlive()) continue;
+                if (Math.abs(e.y - this.y) < 30 && e.x > this.x && e.x < this.goalX) {
+                    const d = distancia(this, e);
+                    if (d < minEnemyDist && d < 200) {
+                        minEnemyDist = d;
+                        target = e;
+                    }
+                }
+            }
+            if (target) {
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > this.range) {
+                    this.vx = (dx/dist)*this.speed;
+                    this.vy = (dy/dist)*this.speed;
+                } else {
+                    this.vx = 0; this.vy = 0;
+                    if (this.attackCooldown <= 0) {
+                        target.takeDamage(this.attackDamage);
+                        this.attackCooldown = this.attackInterval;
+                        this.attackAnim = 10;
+                        sound.play('attack');
+                    }
+                }
+            } else {
+                const dx = this.goalX - this.x;
+                const dist = Math.abs(dx);
+                if (dist > 5) {
+                    this.vx = (dx/dist) * this.speed;
+                    this.vy = 0;
+                } else {
+                    this.vx *= 0.9;
+                    this.vy = 0;
+                }
+                this.direction = 1;
+            }
+        } else {
+            let closest = null, minDist = Infinity;
+            for (let e of enemigos) { if (!e.isAlive()) continue; const d = distancia(this, e); if (d < minDist) { minDist = d; closest = e; } }
+            if (closest) {
+                const dx = closest.x - this.x, dy = closest.y - this.y, dist = Math.hypot(dx, dy);
+                if (dist > this.range) { this.vx = (dx/dist)*this.speed; this.vy = (dy/dist)*this.speed; }
+                else { this.vx = 0; this.vy = 0; if (this.attackCooldown <= 0) { closest.takeDamage(this.attackDamage); this.attackCooldown = this.attackInterval; this.attackAnim = 10; sound.play('attack'); } }
+            } else { this.vx *= 0.9; this.vy *= 0.9; }
+        }
+    }
+}
+
+// ============================================================
+//  MARISCAL (JUGADOR) - TAMAÑO 2X
 // ============================================================
 class Marshal extends Entity {
     constructor(x, y) {
         super(x, y, 'marshal', 2000, 3);
-        this.w = 35; this.h = 45;
+        this.w = 60; this.h = 80; // 2x tamaño normal
         this.attackDamage = 30;
         this.shotDamage = 30;
         this.shootCooldown = 0;
         this.shootAnim = 0;
+        this.range = 60; // Ajustar rango de ataque según tamaño
     }
+
     update(keys) {
         let dx = 0, dy = 0;
         if (keys['ArrowLeft']) dx = -1;
@@ -1056,11 +1398,13 @@ class Marshal extends Entity {
             if (Math.abs(this.vy) < 0.1) this.vy = 0;
             this.state = 'idle';
         }
+
         if (currentLevel === 2) {
             this.x = clamp(this.x, 0, W() * 0.5 - this.w);
         } else if (currentLevel === 3 || currentLevel === 4) {
             this.x = clamp(this.x, 0, W() * 0.25 - this.w);
         }
+
         this.x += this.vx;
         this.y += this.vy;
         const groundY = H() * 0.3;
@@ -1069,25 +1413,27 @@ class Marshal extends Entity {
         if (this.vx > 0) this.direction = 1;
         else if (this.vx < 0) this.direction = -1;
         this.checkWallCollision();
+
         if (this.attackCooldown > 0) this.attackCooldown--;
         if (this.shootCooldown > 0) this.shootCooldown--;
         if (this.shieldTimer > 0) { this.shieldTimer--; this.shieldActive = true; } else { this.shieldActive = false; }
         if (this.attackAnim > 0) this.attackAnim--;
         if (this.shootAnim > 0) this.shootAnim--;
+
         if (keys['j'] || keys['J']) {
             if (this.attackCooldown <= 0) {
                 this.attackCooldown = 20;
                 this.attackAnim = 10;
                 for (let e of enemigos) {
                     if (!e.isAlive()) continue;
-                    if (distancia(this, e) < 60) {
+                    if (distancia(this, e) < 80) { // rango aumentado
                         e.takeDamage(this.attackDamage);
                         sound.play('attack');
                     }
                 }
                 for (let c of cañones) {
                     if (!c.active || !c.isEnemy) continue;
-                    if (distancia(this, c) < 60) {
+                    if (distancia(this, c) < 80) {
                         c.hp -= this.attackDamage;
                         if (c.hp <= 0) { c.active = false; }
                         sound.play('attack');
@@ -1115,13 +1461,22 @@ class Marshal extends Entity {
                     if (d < minDist) { minDist = d; target = c; }
                 }
                 if (target && minDist < 400) {
-                    const p = new Projectile(this.x + (this.direction === 1 ? this.w : 0), this.y + this.h/2, target, 'fire', this.shotDamage, 'ally', 6);
+                    const p = new Projectile(
+                        this.x + (this.direction === 1 ? this.w : 0),
+                        this.y + this.h/2,
+                        target,
+                        'fire',
+                        this.shotDamage,
+                        'ally',
+                        6
+                    );
                     proyectiles.push(p);
                     sound.play('fire');
                 }
             }
         }
     }
+
     draw(ctx, images) {
         if (!this.isAlive()) return;
         let img = images.mariscal;
@@ -1143,7 +1498,7 @@ class Marshal extends Entity {
 }
 
 // ============================================================
-//  ENEMIGOS
+//  ENEMIGOS (SIN CURACIÓN)
 // ============================================================
 class Esqueleto extends Entity {
     constructor(x, y, rushMode = false, goalX = null) {
@@ -1176,9 +1531,11 @@ class Esqueleto extends Entity {
     update(aliados, enemigos, cañones) {
         super.update();
         const allTargets = aliados.concat([marshal]);
+
         if (currentLevel === 4) {
             this.x = Math.max(this.x, W() * 0.5);
         }
+
         if (this.rushMode) {
             let targetCanon = null;
             let minCanonDist = Infinity;
@@ -1206,6 +1563,7 @@ class Esqueleto extends Entity {
                 }
                 return;
             }
+
             let target = null;
             let minDist = Infinity;
             for (let a of allTargets) {
@@ -1337,9 +1695,11 @@ class EsqueletoArquero extends Entity {
     update(aliados, enemigos, proyectiles, cañones) {
         super.update();
         const allTargets = aliados.concat([marshal]);
+
         if (currentLevel === 4) {
             this.x = Math.max(this.x, W() * 0.5);
         }
+
         if (this.rushMode) {
             let target = null;
             let minDist = Infinity;
@@ -1356,7 +1716,15 @@ class EsqueletoArquero extends Entity {
                 if (dist <= this.rangeMax && dist >= this.rangeMin) {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
+                        const p = new Projectile(
+                            this.x + this.w/2,
+                            this.y + this.h/2,
+                            target,
+                            this.projectileType,
+                            this.projectileDamage,
+                            'enemy',
+                            this.projectileSpeed
+                        );
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.shooting = true;
@@ -1396,7 +1764,15 @@ class EsqueletoArquero extends Entity {
                     } else {
                         this.vx = 0; this.vy = 0;
                         if (this.attackCooldown <= 0) {
-                            const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
+                            const p = new Projectile(
+                                this.x + this.w/2,
+                                this.y + this.h/2,
+                                target,
+                                this.projectileType,
+                                this.projectileDamage,
+                                'enemy',
+                                this.projectileSpeed
+                            );
                             proyectiles.push(p);
                             this.attackCooldown = this.attackInterval;
                             this.shooting = true;
@@ -1424,7 +1800,15 @@ class EsqueletoArquero extends Entity {
                     } else {
                         this.vx = 0; this.vy = 0;
                         if (this.attackCooldown <= 0) {
-                            const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
+                            const p = new Projectile(
+                                this.x + this.w/2,
+                                this.y + this.h/2,
+                                target,
+                                this.projectileType,
+                                this.projectileDamage,
+                                'enemy',
+                                this.projectileSpeed
+                            );
                             proyectiles.push(p);
                             this.attackCooldown = this.attackInterval;
                             this.shooting = true;
@@ -1470,9 +1854,11 @@ class GuerreroOscuridad extends Entity {
     update(aliados, enemigos, cañones) {
         super.update();
         const allTargets = aliados.concat([marshal]);
+
         if (currentLevel === 4) {
             this.x = Math.max(this.x, W() * 0.5);
         }
+
         if (this.rushMode) {
             let targetCanon = null;
             let minCanonDist = Infinity;
@@ -1500,6 +1886,7 @@ class GuerreroOscuridad extends Entity {
                 }
                 return;
             }
+
             let target = null;
             let minDist = Infinity;
             for (let a of allTargets) {
@@ -1637,9 +2024,11 @@ class Hechicera extends Entity {
             sound.play('teleport');
         }
         const allTargets = aliados.concat([marshal]);
+
         if (currentLevel === 4) {
             this.x = Math.max(this.x, W() * 0.5);
         }
+
         if (this.rushMode) {
             let target = null;
             let minDist = Infinity;
@@ -1656,7 +2045,15 @@ class Hechicera extends Entity {
                 if (dist <= this.rangeMax && dist >= this.rangeMin) {
                     this.vx = 0; this.vy = 0;
                     if (this.attackCooldown <= 0) {
-                        const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
+                        const p = new Projectile(
+                            this.x + this.w/2,
+                            this.y + this.h/2,
+                            target,
+                            this.projectileType,
+                            this.projectileDamage,
+                            'enemy',
+                            this.projectileSpeed
+                        );
                         proyectiles.push(p);
                         this.attackCooldown = this.attackInterval;
                         this.launchAnim = 10;
@@ -1696,7 +2093,15 @@ class Hechicera extends Entity {
                     } else {
                         this.vx = 0; this.vy = 0;
                         if (this.attackCooldown <= 0) {
-                            const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
+                            const p = new Projectile(
+                                this.x + this.w/2,
+                                this.y + this.h/2,
+                                target,
+                                this.projectileType,
+                                this.projectileDamage,
+                                'enemy',
+                                this.projectileSpeed
+                            );
                             proyectiles.push(p);
                             this.attackCooldown = this.attackInterval;
                             this.launchAnim = 10;
@@ -1724,7 +2129,15 @@ class Hechicera extends Entity {
                     } else {
                         this.vx = 0; this.vy = 0;
                         if (this.attackCooldown <= 0) {
-                            const p = new Projectile(this.x + this.w/2, this.y + this.h/2, target, this.projectileType, this.projectileDamage, 'enemy', this.projectileSpeed);
+                            const p = new Projectile(
+                                this.x + this.w/2,
+                                this.y + this.h/2,
+                                target,
+                                this.projectileType,
+                                this.projectileDamage,
+                                'enemy',
+                                this.projectileSpeed
+                            );
                             proyectiles.push(p);
                             this.attackCooldown = this.attackInterval;
                             this.launchAnim = 10;
@@ -1741,15 +2154,126 @@ class Hechicera extends Entity {
 }
 
 // ============================================================
-//  JEFE FINAL
+//  NUEVA UNIDAD ENEMIGA: DINOSAURIO (como jinete aliado)
+// ============================================================
+class Dinosaurio extends Entity {
+    constructor(x, y, rushMode = false, goalX = null) {
+        super(x, y, 'dinosaurio', 500, 2.5);
+        this.attackDamage = 35;
+        this.range = 40;
+        this.attackInterval = 20;
+        this.w = 45; this.h = 60;
+        this.rushMode = rushMode;
+        this.goalX = goalX;
+        this.isEnemy = true;
+    }
+    draw(ctx, images) {
+        if (!this.isAlive()) return;
+        let img = this.shieldActive ? images.dinosaurio_shield : (this.attackAnim > 0 ? images.dinosaurio_attack : images.dinosaurio);
+        if (img && img.complete && img.naturalWidth > 0) {
+            ctx.save();
+            if (this.direction === -1) { ctx.translate(this.x + this.w, this.y); ctx.scale(-1,1); } else ctx.translate(this.x, this.y);
+            ctx.drawImage(img, 0, 0, this.w, this.h);
+            ctx.restore();
+        } else {
+            ctx.fillStyle = '#8B0000'; ctx.fillRect(this.x, this.y, this.w, this.h);
+            ctx.fillStyle = '#fff'; ctx.font = '10px Arial'; ctx.fillText('D', this.x+8, this.y+20);
+        }
+        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(this.x, this.y-8, this.w, 5);
+        ctx.fillStyle = '#e74c3c'; ctx.fillRect(this.x+2, this.y-6, (this.w-4)*(this.hp/this.maxHP), 3);
+    }
+    update(aliados, enemigos, cañones) {
+        super.update();
+        const allTargets = aliados.concat([marshal]);
+
+        if (currentLevel === 4) {
+            this.x = Math.max(this.x, W() * 0.5);
+        }
+
+        // Comportamiento similar a jinete aliado pero hacia la izquierda
+        let target = null;
+        let minDist = Infinity;
+        if (this.goalX !== null) {
+            // Modo rush hacia la base aliada
+            for (let a of allTargets) {
+                if (!a.isAlive()) continue;
+                const d = distancia(this, a);
+                if (d < minDist && d < 200) {
+                    minDist = d;
+                    target = a;
+                }
+            }
+            if (target) {
+                const dx = target.x - this.x;
+                const dy = target.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > this.range) {
+                    this.vx = (dx/dist) * this.speed;
+                    this.vy = (dy/dist) * this.speed;
+                } else {
+                    this.vx = 0; this.vy = 0;
+                    if (this.attackCooldown <= 0) {
+                        target.takeDamage(this.attackDamage);
+                        this.attackCooldown = this.attackInterval;
+                        this.attackAnim = 10;
+                        sound.play('attack');
+                    }
+                }
+            } else {
+                // Moverse hacia la izquierda (goalX)
+                const dx = this.goalX - this.x;
+                const dist = Math.abs(dx);
+                if (dist > 5) {
+                    this.vx = (dx/dist) * this.speed;
+                    this.vy = 0;
+                } else {
+                    this.vx *= 0.9;
+                    this.vy = 0;
+                }
+                this.direction = -1; // siempre hacia la izquierda
+            }
+        } else {
+            // Comportamiento normal: buscar enemigos (aliados) más cercanos
+            for (let a of allTargets) {
+                if (!a.isAlive()) continue;
+                const d = distancia(this, a);
+                if (d < minDist) {
+                    minDist = d;
+                    target = a;
+                }
+            }
+            if (target) {
+                const dx = target.x - this.x, dy = target.y - this.y, dist = Math.hypot(dx, dy);
+                if (dist > this.range) {
+                    this.vx = (dx/dist)*this.speed;
+                    this.vy = (dy/dist)*this.speed;
+                } else {
+                    this.vx = 0; this.vy = 0;
+                    if (this.attackCooldown <= 0) {
+                        target.takeDamage(this.attackDamage);
+                        this.attackCooldown = this.attackInterval;
+                        this.attackAnim = 10;
+                        sound.play('attack');
+                    }
+                }
+            } else {
+                this.vx *= 0.9;
+                this.vy *= 0.9;
+            }
+        }
+    }
+}
+
+// ============================================================
+//  JEFE FINAL - TAMAÑO 3X EL MARISCAL
 // ============================================================
 class JefeFinal extends Entity {
     constructor(x, y) {
         super(x, y, 'jefe', 100000, 1.5);
         this.attackDamage = 120;
-        this.range = 50;
+        this.range = 100; // rango aumentado por tamaño
         this.attackInterval = 25;
-        this.w = 60; this.h = 80;
+        this.w = 180; this.h = 240; // 3x el tamaño del mariscal (60x80)
         this.rushMode = false;
         this.fireballCooldown = 0;
         this.fireballInterval = 40;
@@ -1757,6 +2281,7 @@ class JefeFinal extends Entity {
         this.shootTimer = 0;
         this.isEnemy = true;
     }
+
     draw(ctx, images) {
         if (!this.isAlive()) return;
         let img = this.shieldActive ? images.jefe_shield : (this.attackAnim > 0 ? images.jefe_attack : images.jefe);
@@ -1769,13 +2294,19 @@ class JefeFinal extends Entity {
             ctx.fillStyle = '#1A1A2E'; ctx.fillRect(this.x, this.y, this.w, this.h);
             ctx.fillStyle = '#fff'; ctx.font = '14px Arial'; ctx.fillText('JEFE', this.x+8, this.y+40);
         }
-        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(this.x, this.y-12, this.w, 8);
-        ctx.fillStyle = '#e74c3c'; ctx.fillRect(this.x+2, this.y-10, (this.w-4)*(this.hp/this.maxHP), 4);
-        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.strokeRect(this.x, this.y-12, this.w, 8);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(this.x, this.y-12, this.w, 8);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(this.x+2, this.y-10, (this.w-4)*(this.hp/this.maxHP), 4);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(this.x, this.y-12, this.w, 8);
     }
+
     update(aliados, enemigos, proyectiles) {
         super.update();
         const allTargets = aliados.concat([marshal]);
+
         if (this.isAlive()) {
             this.shootTimer++;
             if (this.shootTimer >= this.fireballInterval) {
@@ -1790,13 +2321,23 @@ class JefeFinal extends Entity {
                         target = a;
                     }
                 }
-                if (target && minDist < 500) {
-                    const p = new Projectile(this.x + (this.direction === 1 ? this.w : 0), this.y + this.h/2, target, 'fire', this.fireballDamage, 'enemy', 4, true);
+                if (target && minDist < 600) {
+                    const p = new Projectile(
+                        this.x + (this.direction === 1 ? this.w : 0),
+                        this.y + this.h/2,
+                        target,
+                        'fire',
+                        this.fireballDamage,
+                        'enemy',
+                        4,
+                        true
+                    );
                     proyectiles.push(p);
                     sound.play('fire');
                 }
             }
         }
+
         let target = null;
         let minDist = Infinity;
         for (let a of allTargets) {
@@ -1829,11 +2370,14 @@ class JefeFinal extends Entity {
 }
 
 // ============================================================
-//  CAÑÓN
+//  CAÑÓN (con imagen) - DISPARO CADA 3 SEGUNDOS
 // ============================================================
 class Canon {
     constructor(x, y, isEnemy = false) {
-        this.x = x; this.y = y; this.w = 30; this.h = 30;
+        this.x = x;
+        this.y = y;
+        this.w = 30;
+        this.h = 30;
         this.hp = isEnemy ? 200 : 150;
         this.maxHP = this.hp;
         this.active = true;
@@ -1845,6 +2389,7 @@ class Canon {
         this.isEnemy = isEnemy;
         this.type = isEnemy ? 'cañon_enemigo' : 'cañon_amigo';
     }
+
     draw(ctx, images) {
         if (!this.active) return;
         const img = images.cañon;
@@ -1868,6 +2413,7 @@ class Canon {
         ctx.fillStyle = '#2ecc71';
         ctx.fillRect(this.x+2, this.y-6, (this.w-4)*(this.hp/this.maxHP), 3);
     }
+
     update(targets) {
         if (!this.active) return;
         this.shootTimer++;
@@ -1875,7 +2421,7 @@ class Canon {
         if (this.isEnemy) {
             for (let t of targets) {
                 if (!t.isAlive()) continue;
-                if (t.type === 'marshal' || t.type === 'guerrero' || t.type === 'arquero' || t.type === 'maga' || t.type === 'jinete') {
+                if (t.type === 'marshal' || t.type === 'guerrero' || t.type === 'arquero' || t.type === 'maga' || t.type === 'jinete' || t.type === 'medico') {
                     if (Math.abs(t.y - this.y) < 30 && t.x < this.x) {
                         hasTarget = true;
                         break;
@@ -1885,7 +2431,7 @@ class Canon {
         } else {
             for (let t of targets) {
                 if (!t.isAlive()) continue;
-                if (t.type === 'esqueleto' || t.type === 'esqueleto_arquero' || t.type === 'guerrero_oscuridad' || t.type === 'hechicera' || t.type === 'jefe') {
+                if (t.type === 'esqueleto' || t.type === 'esqueleto_arquero' || t.type === 'guerrero_oscuridad' || t.type === 'hechicera' || t.type === 'jefe' || t.type === 'dinosaurio') {
                     if (Math.abs(t.y - this.y) < 30 && t.x > this.x) {
                         hasTarget = true;
                         break;
@@ -1899,6 +2445,7 @@ class Canon {
             this.bullets.push(ball);
             sound.play('canon');
         }
+
         for (let i = this.bullets.length - 1; i >= 0; i--) {
             const b = this.bullets[i];
             const targetList = this.isEnemy ? [marshal, ...aliados] : enemigos;
@@ -1908,11 +2455,13 @@ class Canon {
             }
         }
     }
+
     drawBullets(ctx) {
         for (let b of this.bullets) {
             b.draw(ctx);
         }
     }
+
     takeDamage(dmg) {
         this.hp -= dmg;
         if (this.hp <= 0) { this.hp = 0; this.active = false; }
@@ -1921,16 +2470,21 @@ class Canon {
 }
 
 // ============================================================
-//  MURO
+//  CLASE MURO (para nivel 4) - UN SOLO MURO VERTICAL
 // ============================================================
 class Wall {
     constructor(x, y, w, h) {
-        this.x = x; this.y = y; this.w = w; this.h = h;
+        this.x = x;
+        this.y = y;
+        this.w = w;
+        this.h = h;
         this.active = true;
     }
+
     draw(ctx) {
         if (!this.active) return;
-        const brickW = 20, brickH = 10;
+        const brickW = 20;
+        const brickH = 10;
         ctx.fillStyle = '#8B4513';
         ctx.fillRect(this.x, this.y, this.w, this.h);
         ctx.strokeStyle = '#5D3A1A';
@@ -1977,10 +2531,11 @@ let levelEnemyKills = 0;
 let levelAllyKills = 0;
 
 let availableUnits = {
-    guerrero: 10000,
-    arquero: 800,
-    maga: 500,
-    jinete: 500
+    guerrero: 4000,
+    arquero: 300,
+    maga: 80,
+    jinete: 100,
+    medico: 30
 };
 
 let MAX_FIELD_UNITS = 200;
@@ -2011,6 +2566,7 @@ function showLevelIntro(level) {
     levelIntroActive = true;
     introTimer = 120;
 }
+
 function updateLevelIntro() {
     if (levelIntroActive) {
         introTimer--;
@@ -2022,7 +2578,7 @@ function updateLevelIntro() {
 }
 
 // ============================================================
-//  FUNCIONES DE GESTIÓN DE UNIDADES
+//  FUNCIÓN PARA DEVOLVER UNIDADES SOBREVIVIENTES A LA RESERVA
 // ============================================================
 function returnSurvivingUnits() {
     for (let a of aliados) {
@@ -2032,22 +2588,27 @@ function returnSurvivingUnits() {
             else if (type === 'arquero') availableUnits.arquero++;
             else if (type === 'maga') availableUnits.maga++;
             else if (type === 'jinete') availableUnits.jinete++;
+            else if (type === 'medico') availableUnits.medico++;
         }
     }
     aliados = [];
     updateUI();
 }
 
+// ============================================================
+//  FUNCIONES DE REINICIO COMPLETO
+// ============================================================
 function fullReset() {
     totalEnemyKills = 0;
     totalAllyKills = 0;
     levelEnemyKills = 0;
     levelAllyKills = 0;
     availableUnits = {
-        guerrero: 10000,
-        arquero: 800,
-        maga: 500,
-        jinete: 500
+        guerrero: 4000,
+        arquero: 300,
+        maga: 80,
+        jinete: 100,
+        medico: 30
     };
     aliados = [];
     enemigos = [];
@@ -2083,7 +2644,6 @@ function loadLevel(level) {
     gameOverFlag = false;
     infiltrationSuccess = false;
 
-    // Configurar límites según nivel
     if (level === 4) {
         MAX_FIELD_UNITS = 80;
         MAX_ENEMIES_LEVEL = 40;
@@ -2163,7 +2723,6 @@ function loadLevel(level) {
             levelObjective = 'killAll';
     }
 
-    // Mostrar/ocultar el reloj según nivel
     if (levelMaxTime > 0 && (level === 2 || level === 3 || level === 4)) {
         timerContainer.style.display = 'flex';
     } else {
@@ -2192,6 +2751,7 @@ function registerAllyDeath() {
     levelAllyKills++;
     updateUI();
 }
+
 function registerEnemyDeath() {
     totalEnemyKills++;
     levelEnemyKills++;
@@ -2199,34 +2759,37 @@ function registerEnemyDeath() {
 }
 
 // ============================================================
-//  SPAWN DE ENEMIGOS
+//  FUNCIONES DE SPAWN ORGANIZADO (enemigos)
 // ============================================================
 function generateGroup(level) {
     let type, count;
     if (level === 4) {
         const rand = Math.random();
-        if (rand < 0.20) { type = 'esqueleto'; count = 8 + Math.floor(Math.random() * 5); }
-        else if (rand < 0.80) { type = 'esqueleto_arquero'; count = 8 + Math.floor(Math.random() * 5); }
-        else if (rand < 0.90) { type = 'guerrero_oscuridad'; count = 8 + Math.floor(Math.random() * 5); }
-        else { type = 'hechicera'; count = 5 + Math.floor(Math.random() * 4); }
+        if (rand < 0.15) { type = 'esqueleto'; count = 8 + Math.floor(Math.random() * 5); }
+        else if (rand < 0.40) { type = 'esqueleto_arquero'; count = 8 + Math.floor(Math.random() * 5); }
+        else if (rand < 0.60) { type = 'guerrero_oscuridad'; count = 8 + Math.floor(Math.random() * 5); }
+        else if (rand < 0.80) { type = 'hechicera'; count = 5 + Math.floor(Math.random() * 4); }
+        else { type = 'dinosaurio'; count = 4 + Math.floor(Math.random() * 3); }
         if (count > 12) count = 8 + Math.floor(Math.random() * 4);
     } else if (level === 3) {
         const rand = Math.random();
-        if (rand < 0.50) { type = 'esqueleto'; count = 8 + Math.floor(Math.random() * 5); }
-        else if (rand < 0.70) { type = 'guerrero_oscuridad'; count = 8 + Math.floor(Math.random() * 5); }
-        else if (rand < 0.85) { type = 'hechicera'; count = 5 + Math.floor(Math.random() * 4); }
-        else { type = 'esqueleto_arquero'; count = 5 + Math.floor(Math.random() * 4); }
+        if (rand < 0.30) { type = 'esqueleto'; count = 8 + Math.floor(Math.random() * 5); }
+        else if (rand < 0.55) { type = 'guerrero_oscuridad'; count = 8 + Math.floor(Math.random() * 5); }
+        else if (rand < 0.80) { type = 'hechicera'; count = 5 + Math.floor(Math.random() * 4); }
+        else { type = 'dinosaurio'; count = 4 + Math.floor(Math.random() * 3); }
     } else if (level === 2) {
         const rand = Math.random();
-        if (rand < 0.60) { type = 'esqueleto'; count = 8 + Math.floor(Math.random() * 5); }
-        else if (rand < 0.70) { type = 'guerrero_oscuridad'; count = 8 + Math.floor(Math.random() * 5); }
-        else if (rand < 0.85) { type = 'hechicera'; count = 5 + Math.floor(Math.random() * 4); }
-        else { type = 'esqueleto_arquero'; count = 5 + Math.floor(Math.random() * 4); }
+        if (rand < 0.40) { type = 'esqueleto'; count = 8 + Math.floor(Math.random() * 5); }
+        else if (rand < 0.60) { type = 'guerrero_oscuridad'; count = 8 + Math.floor(Math.random() * 5); }
+        else if (rand < 0.80) { type = 'hechicera'; count = 5 + Math.floor(Math.random() * 4); }
+        else { type = 'dinosaurio'; count = 4 + Math.floor(Math.random() * 3); }
     } else {
         type = 'esqueleto';
         count = 3 + Math.floor(Math.random() * 3);
     }
+
     if (count > 12) count = 12;
+
     const maxAllowed = MAX_ENEMIES_LEVEL - enemigos.length;
     if (maxAllowed <= 0) return [];
     count = Math.min(count, maxAllowed);
@@ -2235,21 +2798,35 @@ function generateGroup(level) {
     const groundY = H() * 0.3;
     const maxY = H() - 20;
     const rush = (level === 3);
+
     const spacingX = 30;
     const totalWidth = (count - 1) * spacingX;
     const startX = W() * 0.78 + (W() * 0.22 - totalWidth) / 2;
     const baseY = groundY + 10 + Math.random() * (maxY - groundY - 20);
+
     for (let i = 0; i < count; i++) {
         const x = startX + i * spacingX;
         const y = baseY + (Math.random() - 0.5) * 20;
         let enemy;
         const goal = null;
         switch (type) {
-            case 'esqueleto': enemy = new Esqueleto(x, y, rush, goal); break;
-            case 'esqueleto_arquero': enemy = new EsqueletoArquero(x, y, rush, goal); break;
-            case 'guerrero_oscuridad': enemy = new GuerreroOscuridad(x, y, rush, goal); break;
-            case 'hechicera': enemy = new Hechicera(x, y, rush, goal); break;
-            default: enemy = new Esqueleto(x, y, rush, goal);
+            case 'esqueleto':
+                enemy = new Esqueleto(x, y, rush, goal);
+                break;
+            case 'esqueleto_arquero':
+                enemy = new EsqueletoArquero(x, y, rush, goal);
+                break;
+            case 'guerrero_oscuridad':
+                enemy = new GuerreroOscuridad(x, y, rush, goal);
+                break;
+            case 'hechicera':
+                enemy = new Hechicera(x, y, rush, goal);
+                break;
+            case 'dinosaurio':
+                enemy = new Dinosaurio(x, y, rush, goal);
+                break;
+            default:
+                enemy = new Esqueleto(x, y, rush, goal);
         }
         group.push(enemy);
     }
@@ -2257,15 +2834,17 @@ function generateGroup(level) {
 }
 
 // ============================================================
-//  RECLUTAR GRUPOS
+//  NUEVA FUNCIÓN: RECLUTAR GRUPOS (incluye médicos)
 // ============================================================
 function spawnGroup(type, count) {
     if (!gameRunning || paused || gameOverFlag) return;
     if (availableUnits[type] <= 0) return;
+
     const fieldCount = aliados.filter(a => a.isAlive()).length;
     let maxCanSpawn = Math.min(availableUnits[type], MAX_FIELD_UNITS - fieldCount);
     if (maxCanSpawn <= 0) return;
     const toSpawn = Math.min(count, maxCanSpawn);
+
     const baseX = marshal.x + marshal.direction * 30;
     const baseY = marshal.y + 10;
     const cols = 5;
@@ -2284,6 +2863,7 @@ function spawnGroup(type, count) {
             case 'arquero': unit = new Arquero(x, y, goalX); break;
             case 'maga': unit = new Maga(x, y, goalX); break;
             case 'jinete': unit = new Jinete(x, y, goalX); break;
+            case 'medico': unit = new Medico(x, y, goalX); break;
             default: return;
         }
         aliados.push(unit);
@@ -2299,6 +2879,7 @@ function spawnGroup(type, count) {
 // ============================================================
 function update() {
     if (!gameRunning || paused || gameOverFlag) return;
+
     updateLevelIntro();
 
     if (levelMaxTime > 0) {
@@ -2336,7 +2917,7 @@ function update() {
 
     for (let a of aliados) {
         if (a.isAlive()) {
-            if (a.type === 'arquero' || a.type === 'maga') {
+            if (a.type === 'arquero' || a.type === 'maga' || a.type === 'medico') {
                 a.update(aliados, enemigos, proyectiles, cañones);
             } else {
                 a.update(aliados, enemigos, cañones);
@@ -2438,6 +3019,7 @@ function update() {
 function draw() {
     const w = W(), h = H();
     ctx.clearRect(0, 0, w, h);
+
     const skyHeight = h * 0.3;
     const groundY = skyHeight;
 
@@ -2550,7 +3132,7 @@ function updateUI() {
         timerSpan.textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
     }
 
-    unitsSpan.textContent = `G:${availableUnits.guerrero} A:${availableUnits.arquero} M:${availableUnits.maga} J:${availableUnits.jinete}`;
+    unitsSpan.textContent = `G:${availableUnits.guerrero} A:${availableUnits.arquero} M:${availableUnits.maga} J:${availableUnits.jinete} H:${availableUnits.medico}`;
     const fieldCount = aliados.filter(a => a.isAlive()).length;
     fieldUnitsSpan.textContent = `${fieldCount}/${MAX_FIELD_UNITS}`;
 }
@@ -2570,6 +3152,7 @@ function victory() {
     saveScore(finalScore);
     victoryScreen.classList.remove('hidden');
 }
+
 function gameOver() {
     if (gameOverFlag) return;
     gameOverFlag = true;
@@ -2590,6 +3173,7 @@ function saveScore(score) {
     if (scores.length > 20) scores = scores.slice(0,20);
     localStorage.setItem('buenosMalosScores', JSON.stringify(scores));
 }
+
 function loadScores() {
     const scores = JSON.parse(localStorage.getItem('buenosMalosScores') || '[]');
     scoreList.innerHTML = '';
@@ -2604,13 +3188,14 @@ function loadScores() {
         }
     }
 }
+
 function clearScores() {
     localStorage.removeItem('buenosMalosScores');
     loadScores();
 }
 
 // ============================================================
-//  INICIALIZACIÓN
+//  INICIALIZACIÓN Y BUCLE PRINCIPAL
 // ============================================================
 async function init() {
     await loadImages();
@@ -2627,13 +3212,13 @@ async function init() {
         if (e.key === '2') spawnGroup('arquero', 5);
         if (e.key === '3') spawnGroup('maga', 5);
         if (e.key === '4') spawnGroup('jinete', 5);
+        if (e.key === '5') spawnGroup('medico', 3);
 
-        if (e.key === '5') {
+        if (e.key === '6') {
             if (gameRunning && !gameOverFlag && !victoryScreen.classList.contains('hidden') === false) {
                 if (!surrenderConfirm.classList.contains('hidden')) return;
                 wasPausedBeforeSurrender = paused;
                 surrenderConfirm.classList.remove('hidden');
-                // Pausar sin mostrar mensaje
                 paused = true;
                 document.getElementById('pauseMsg').style.display = 'none';
             }
@@ -2648,8 +3233,12 @@ async function init() {
     });
     document.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
-    document.getElementById('langEs').addEventListener('click', () => setLanguage('es'));
-    document.getElementById('langEn').addEventListener('click', () => setLanguage('en'));
+    document.getElementById('langEs').addEventListener('click', () => {
+        setLanguage('es');
+    });
+    document.getElementById('langEn').addEventListener('click', () => {
+        setLanguage('en');
+    });
 
     document.getElementById('playBtn').addEventListener('click', () => {
         sound.play('button');
@@ -2742,7 +3331,7 @@ async function init() {
     }
     loop();
 
-    console.log('✅ Juego inicializado');
+    console.log('✅ Juego BUENOS Y MALOS actualizado - 5 niveles con nuevas unidades y tamaños');
 }
 
 init();

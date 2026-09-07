@@ -12,13 +12,17 @@
 
     <!-- UI del juego -->
     <div id="ui">
+        <!-- Bajas central -->
         <div id="casualtiesContainer">
             <span>⚔️</span> <span id="enemyKills">0</span> <span style="color:#aaa;">-</span> <span id="allyKills">0</span>
         </div>
+        <!-- Reloj (visible solo en niveles con tiempo) -->
         <div id="timerContainer" style="display:none;">
             <span>⏱️</span> <span id="timerDisplay">0:00</span>
         </div>
-        <div><span>🏹</span> <span id="unitsDisplay">G:0 A:0 M:0 J:0</span></div>
+        <!-- Unidades disponibles -->
+        <div><span>🏹</span> <span id="unitsDisplay">G:0 A:0 M:0 J:0 D:0</span></div>
+        <!-- Unidades en campo -->
         <div><span>📊</span> <span id="fieldUnits">0/200</span></div>
     </div>
     <div id="pauseMsg">⏸️ PAUSA</div>
@@ -32,22 +36,23 @@
         <button id="instructionsBtn" class="small-btn" data-i18n="instructionsBtn">📖 INSTRUCCIONES</button>
         <button id="scoresBtn" class="small-btn" data-i18n="scoresBtn">🏆 HISTORIAL</button>
 
+        <!-- Interruptor de idioma -->
         <div id="languageToggle">
             <img src="images/spain.png" alt="Español" id="langEs" class="lang-flag active" data-lang="es">
             <img src="images/uk.png" alt="English" id="langEn" class="lang-flag" data-lang="en">
         </div>
 
-        <p style="font-size:0.8em; margin-top:20px; opacity:0.8;" data-i18n="controls">Flechas mover | J ataque | K escudo | L disparo | 1-4 unidades (grupos) | 5 rendirse | P pausa</p>
+        <p style="font-size:0.8em; margin-top:20px; opacity:0.8;" data-i18n="controls">Flechas mover | J ataque | K escudo | L disparo | 1-4 (grupos) | 5 Médicos | 6 rendirse | P pausa</p>
     </div>
 
     <div id="instructionsScreen" class="menu-overlay hidden">
         <h2 data-i18n="instructionsTitle">📖 INSTRUCCIONES</h2>
         <div data-i18n="instructionsText" style="max-width:600px; text-align:left; margin:10px auto;">
             <p><strong>Mariscal:</strong> Flechas mover, J ataque (espada), K escudo, L disparo (proyectil).</p>
-            <p><strong>Reclutar grupos:</strong> 1 → 10 Guerreros, 2 → 5 Arqueros, 3 → 5 Magas, 4 → 5 Jinetes.</p>
+            <p><strong>Reclutar grupos:</strong> 1 → 10 Guerreros, 2 → 5 Arqueros, 3 → 5 Magas, 4 → 5 Jinetes, 5 → 3 Médicos.</p>
             <p><strong>Niveles:</strong> N1: Aniquilar enemigos. N2: Más bajas en 2 min (oleadas rápidas). N3: Defender base 2 min (máx 40 aliados, 80 enemigos). N4: Infiltrar soldado en base enemiga (máx 80 aliados, 40 enemigos, oleadas rápidas, muro infranqueable, defensores no pasan de la mitad). N5: Derrotar al JEFE (100.000 PS, dispara bolas de fuego, máx 20 aliados).</p>
             <p><strong>Puntuación:</strong> bajas_enemigas - bajas_propias. ¡Historial guardado!</p>
-            <p><strong>Teclas:</strong> 5 rendirse (confirmar), P pausar.</p>
+            <p><strong>Teclas:</strong> 6 rendirse (confirmar), P pausar.</p>
         </div>
         <button id="backFromInstructions" class="small-btn" data-i18n="backFromInstructions">⬅ VOLVER</button>
     </div>
